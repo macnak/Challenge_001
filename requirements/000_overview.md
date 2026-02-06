@@ -163,13 +163,13 @@ Build an Automation / Performance Challenge web application designed to be diffi
 Status key: Not started / In progress / Done
 
 - Phase 0 — Project scaffolding: Done
-- Phase 1 — Session & routing core: Not started
-- Phase 2 — Challenge engine: Not started
-- Phase 3 — First challenge set (core): Not started
-- Phase 4 — Realtime challenges: Not started
-- Phase 5 — UX & theming: Not started
-- Phase 6 — Testing & hardening: Not started
-- Phase 7 — Packaging & docs: Not started
+- Phase 1 — Session & routing core: Done
+- Phase 2 — Challenge engine: Done
+- Phase 3 — First challenge set (core): Done
+- Phase 4 — Realtime challenges: Done
+- Phase 5 — UX & theming: Done
+- Phase 6 — Testing & hardening: Done
+- Phase 7 — Packaging & docs: Done
 
 ## Technology stack
 
