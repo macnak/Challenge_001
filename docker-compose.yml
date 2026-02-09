@@ -1,0 +1,11 @@
+services:
+  challenge-001:
+    image: macnak/challenge-001:latest
+    container_name: challenge-001
+    ports:
+      - '3000:3000'
+    environment:
+      ACCESS_METHOD: ${ACCESS_METHOD:-}
+      FIXED_ORDER: ${FIXED_ORDER:-}
+      SHOW_PER_PAGE_RESULTS: ${SHOW_PER_PAGE_RESULTS:-}
+      BLOCK_CONTINUE_ON_FAILURE: ${BLOCK_CONTINUE_ON_FAILURE:-}

@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { runConfig } from './config.js';
 
 export type AccessMethod = 'jwt' | 'basic' | 'none' | 'user-pass';
 
@@ -22,7 +23,9 @@ const sessions = new Map<string, Session>();
 export const createSession = () => {
   const id = crypto.randomUUID();
   const seed = crypto.randomBytes(16).toString('hex');
-  const accessMethod = ACCESS_METHODS[Math.floor(Math.random() * ACCESS_METHODS.length)];
+  const accessMethod =
+    runConfig.accessMethodOverride ??
+    ACCESS_METHODS[Math.floor(Math.random() * ACCESS_METHODS.length)];
   const now = Date.now();
 
   const session: Session = {

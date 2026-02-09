@@ -14,6 +14,7 @@ import {
   getOrCreateState,
 } from './challenges/runtimeIndex.js';
 import { shuffle } from './challenges/utils.js';
+import { runConfig } from './config.js';
 
 const SESSION_COOKIE = 'challenge_session';
 
@@ -51,10 +52,11 @@ export const registerRoutes = (app: FastifyInstance) => {
   app.get('/start', async (_request, reply) => {
     const session = createSession();
     const tabToken = createTabToken(session);
-    const order = shuffle(challengeRuntimes.map((runtime) => runtime.id)).slice(
-      0,
-      session.pageCount,
-    );
+    const defaultOrder = challengeRuntimes.map((runtime) => runtime.id);
+    const order = runConfig.fixedOrder
+      ? defaultOrder
+      : shuffle(defaultOrder).slice(0, session.pageCount);
+    session.pageCount = order.length;
     setPageOrder(session, order);
 
     reply
@@ -214,6 +216,29 @@ export const registerRoutes = (app: FastifyInstance) => {
     const passed = runtime.validate({ session, index: pageIndex }, state.data, payload);
 
     setChallengeResult(session, pageIndex, passed);
+    if (runConfig.showPerPageResults) {
+      const nextIndex = pageIndex + 1;
+      const nextHref =
+        nextIndex > session.pageCount
+          ? `/m/${session.accessMethod}/summary?t=${tabToken}`
+          : `/m/${session.accessMethod}/challenge/${nextIndex}?t=${tabToken}`;
+      const retryHref = `/m/${session.accessMethod}/challenge/${pageIndex}?t=${tabToken}`;
+      const allowContinue = passed || !runConfig.blockContinueOnFailure;
+      const html = renderPage({
+        title: `Challenge ${pageIndex} Result`,
+        body: `
+          <h1>Challenge ${pageIndex} Result</h1>
+          <p class="muted">Result: <strong>${passed ? 'Correct' : 'Incorrect'}</strong></p>
+          <div class="row">
+            <a class="button" href="${retryHref}">Retry</a>
+            ${allowContinue ? `<a class="button primary" href="${nextHref}">Continue</a>` : ''}
+          </div>
+        `,
+      });
+
+      reply.type('text/html').send(html);
+      return;
+    }
     if (pageIndex >= session.pageCount) {
       reply.redirect(`/m/${session.accessMethod}/summary?t=${tabToken}`);
       return;
@@ -245,9 +270,25 @@ export const registerRoutes = (app: FastifyInstance) => {
     const passed =
       incorrect.length === 0 && Object.keys(session.resultsByIndex).length >= session.pageCount;
 
+    const incorrectDetails = incorrect
+      .map((idx) => {
+        const runtimeId = session.pageOrder[idx - 1];
+        const runtime = runtimeId ? getChallengeRuntimeById(runtimeId) : undefined;
+        const title = runtime?.title ?? 'Unknown Challenge';
+        return `<li>${idx} — ${title}</li>`;
+      })
+      .join('');
+
     const details =
       show === '1'
-        ? `<p class="muted">Incorrect pages: ${incorrect.length ? incorrect.join(', ') : 'None'}</p>`
+        ? incorrect.length
+          ? `
+            <p class="muted">Incorrect pages:</p>
+            <ul class="muted">
+              ${incorrectDetails}
+            </ul>
+          `
+          : '<p class="muted">Incorrect pages: None</p>'
         : '';
 
     const html = renderPage({

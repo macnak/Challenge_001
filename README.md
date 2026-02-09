@@ -25,6 +25,23 @@ Run:
 
 `docker run -p 3000:3000 challenge-001`
 
+Docker Hub image:
+
+macnak/challenge-001:latest
+
+```
+docker pull macnak/challenge-001:latest
+docker run -p 3000:3000 --name challenge-001 macnak/challenge-001:latest
+```
+
+docker-compose:
+
+```
+docker compose up
+```
+
+See [requirements/002_usage.md](requirements/002_usage.md) for run modes and [requirements/003_docker_hub.md](requirements/003_docker_hub.md) for Docker Hub listing content.
+
 ## Realtime (SSE)
 
 SSE endpoint: `/session/:sessionId/events`
