@@ -1,12 +1,15 @@
 import type { ChallengeContext } from './types.js';
-import { shuffle } from './utils.js';
+import { shuffle, randomString, randomInt } from './utils.js';
 
-export const generateDomShuffling = () => {
+export const generateDomShuffling = (context: ChallengeContext) => {
   const tokens = Array.from({ length: 6 }, () =>
-    `DOM-${Math.random().toString(36).slice(2, 6)}`.toUpperCase(),
+    `DOM-${randomString(4, context.rng)}`.toUpperCase(),
   );
-  const correct = tokens[Math.floor(Math.random() * tokens.length)];
-  const items = shuffle(tokens.map((value) => ({ value, isTarget: value === correct })));
+  const correct = tokens[randomInt(0, tokens.length - 1, context.rng)];
+  const items = shuffle(
+    tokens.map((value) => ({ value, isTarget: value === correct })),
+    context.rng,
+  );
   return { items, correct };
 };
 

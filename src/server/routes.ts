@@ -10,10 +10,13 @@ import {
 import { renderPage } from './render.js';
 import {
   challengeRuntimes,
+  buildChallengeContext,
+  filterChallengeRuntimes,
   getChallengeRuntimeById,
   getOrCreateState,
+  sortChallengeRuntimes,
 } from './challenges/runtimeIndex.js';
-import { shuffle } from './challenges/utils.js';
+import { createSeededRng, shuffle } from './challenges/utils.js';
 import { runConfig } from './config.js';
 
 const SESSION_COOKIE = 'challenge_session';
@@ -52,10 +55,24 @@ export const registerRoutes = (app: FastifyInstance) => {
   app.get('/start', async (_request, reply) => {
     const session = createSession();
     const tabToken = createTabToken(session);
-    const defaultOrder = challengeRuntimes.map((runtime) => runtime.id);
+    const filtered = filterChallengeRuntimes(
+      challengeRuntimes,
+      runConfig.toolProfileOverride,
+      runConfig.difficultyTierOverride,
+    );
+    const runtimePool = filtered.length ? filtered : challengeRuntimes;
+    const orderedPool =
+      runConfig.interviewPreset || runConfig.toolProfileOverride || runConfig.difficultyTierOverride
+        ? sortChallengeRuntimes(runtimePool)
+        : runtimePool;
+    const defaultOrder = orderedPool.map((runtime) => runtime.id);
     const order = runConfig.fixedOrder
       ? defaultOrder
-      : shuffle(defaultOrder).slice(0, session.pageCount);
+      : (() => {
+          const rng = runConfig.fixedSeed ? createSeededRng(`${session.seed}:order`) : undefined;
+          const shuffled = shuffle(defaultOrder, rng ?? Math.random);
+          return shuffled.slice(0, Math.min(session.pageCount, shuffled.length));
+        })();
     session.pageCount = order.length;
     setPageOrder(session, order);
 
@@ -151,8 +168,9 @@ export const registerRoutes = (app: FastifyInstance) => {
     const runtime = runtimeId
       ? getChallengeRuntimeById(runtimeId)
       : getChallengeRuntimeById('whitespace-token');
-    const state = getOrCreateState({ session, index: pageIndex }, runtime);
-    const challengeMarkup = runtime.render({ session, index: pageIndex }, state.data);
+    const context = buildChallengeContext(session, pageIndex, runtime.id);
+    const state = getOrCreateState(context, runtime);
+    const challengeMarkup = runtime.render(context, state.data);
 
     if (runtime.id === 'header-derived') {
       const headerName = typeof state.data.header === 'string' ? state.data.header : 'etag';
@@ -211,9 +229,10 @@ export const registerRoutes = (app: FastifyInstance) => {
     const runtime = runtimeId
       ? getChallengeRuntimeById(runtimeId)
       : getChallengeRuntimeById('whitespace-token');
-    const state = getOrCreateState({ session, index: pageIndex }, runtime);
+    const context = buildChallengeContext(session, pageIndex, runtime.id);
+    const state = getOrCreateState(context, runtime);
     const payload = normalizePayload(request.body);
-    const passed = runtime.validate({ session, index: pageIndex }, state.data, payload);
+    const passed = runtime.validate(context, state.data, payload);
 
     setChallengeResult(session, pageIndex, passed);
     if (runConfig.showPerPageResults) {
@@ -224,11 +243,20 @@ export const registerRoutes = (app: FastifyInstance) => {
           : `/m/${session.accessMethod}/challenge/${nextIndex}?t=${tabToken}`;
       const retryHref = `/m/${session.accessMethod}/challenge/${pageIndex}?t=${tabToken}`;
       const allowContinue = passed || !runConfig.blockContinueOnFailure;
+      const explanation =
+        runConfig.showPerPageExplanation && !passed && runtime.explain
+          ? `
+            <div class="card" style="margin-top:16px;">
+              <p class="muted" style="margin:0;"><strong>Explanation:</strong> ${runtime.explain}</p>
+            </div>
+          `
+          : '';
       const html = renderPage({
         title: `Challenge ${pageIndex} Result`,
         body: `
           <h1>Challenge ${pageIndex} Result</h1>
           <p class="muted">Result: <strong>${passed ? 'Correct' : 'Incorrect'}</strong></p>
+          ${explanation}
           <div class="row">
             <a class="button" href="${retryHref}">Retry</a>
             ${allowContinue ? `<a class="button primary" href="${nextHref}">Continue</a>` : ''}

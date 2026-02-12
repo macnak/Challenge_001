@@ -1,14 +1,14 @@
 import type { ChallengeContext } from './types.js';
-import { randomInt, shuffle, pick } from './utils.js';
+import { randomInt, shuffle, pick, randomString } from './utils.js';
 
-export const generateRadioCheckbox = () => {
-  const options = Array.from({ length: randomInt(4, 9) }, () =>
-    `OPT-${Math.random().toString(36).slice(2, 7)}`.toUpperCase(),
+export const generateRadioCheckbox = (context: ChallengeContext) => {
+  const options = Array.from({ length: randomInt(4, 9, context.rng) }, () =>
+    `OPT-${randomString(5, context.rng)}`.toUpperCase(),
   );
-  const correct = pick(options);
-  const type = Math.random() > 0.5 ? 'radio' : 'checkbox';
+  const correct = pick(options, context.rng);
+  const type = context.rng() > 0.5 ? 'radio' : 'checkbox';
 
-  return { options: shuffle(options), correct, type };
+  return { options: shuffle(options, context.rng), correct, type };
 };
 
 export const renderRadioCheckbox = (

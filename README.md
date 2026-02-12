@@ -50,3 +50,9 @@ Used to deliver request-integrity secrets for the HMAC challenge.
 ## Notes
 
 See requirements in requirements/000_overview.md.
+
+## Interview modes
+
+- Tool-aware challenge profiles (protocol tools like JMeter vs browser tools like Playwright)
+- Difficulty tiers that order challenges from easy to advanced
+- Interview presets that map profiles + tiers for candidate screening

@@ -1,15 +1,15 @@
 import type { ChallengeContext } from './types.js';
 import { randomInt, shuffle } from './utils.js';
 
-export const generateSortingMulti = () => {
-  const count = randomInt(10, 20);
-  const numbers = Array.from({ length: count }, () => randomInt(1, 200));
-  const order = Math.random() > 0.5 ? 'asc' : 'desc';
+export const generateSortingMulti = (context: ChallengeContext) => {
+  const count = randomInt(10, 20, context.rng);
+  const numbers = Array.from({ length: count }, () => randomInt(1, 200, context.rng));
+  const order = context.rng() > 0.5 ? 'asc' : 'desc';
 
   return {
     numbers,
     order,
-    display: shuffle(numbers),
+    display: shuffle(numbers, context.rng),
   };
 };
 

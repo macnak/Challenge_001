@@ -1,12 +1,15 @@
 import type { ChallengeContext } from './types.js';
-import { shuffle } from './utils.js';
+import { shuffle, randomString } from './utils.js';
 
-export const generateTokenAssembly = () => {
-  const token = `TA-${Math.random().toString(36).slice(2, 10)}`.toUpperCase();
+export const generateTokenAssembly = (context: ChallengeContext) => {
+  const token = `TA-${randomString(8, context.rng)}`.toUpperCase();
   const parts = token.split('');
   return {
     token,
-    parts: shuffle(parts.map((value, index) => ({ value, index }))),
+    parts: shuffle(
+      parts.map((value, index) => ({ value, index })),
+      context.rng,
+    ),
   };
 };
 

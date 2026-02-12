@@ -1,7 +1,8 @@
 import type { ChallengeContext } from './types.js';
+import { randomString } from './utils.js';
 
-export const generateShadowCanvas = () => {
-  const token = `SC-${Math.random().toString(36).slice(2, 10)}`.toUpperCase();
+export const generateShadowCanvas = (context: ChallengeContext) => {
+  const token = `SC-${randomString(8, context.rng)}`.toUpperCase();
   return { token };
 };
 

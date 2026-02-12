@@ -1,7 +1,8 @@
 import type { ChallengeContext } from './types.js';
+import { randomString } from './utils.js';
 
-export const generateHeaderDerived = () => {
-  const value = `W/"${Math.random().toString(36).slice(2, 10)}"`;
+export const generateHeaderDerived = (context: ChallengeContext) => {
+  const value = `W/"${randomString(8, context.rng)}"`;
   return { header: 'etag', value, hint: 'Use the ETag response header as the answer.' };
 };
 

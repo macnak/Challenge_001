@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { runConfig } from './config.js';
+import { createSeededRng, randomInt } from './challenges/utils.js';
 
 export type AccessMethod = 'jwt' | 'basic' | 'none' | 'user-pass';
 
@@ -22,10 +23,10 @@ const sessions = new Map<string, Session>();
 
 export const createSession = () => {
   const id = crypto.randomUUID();
-  const seed = crypto.randomBytes(16).toString('hex');
+  const seed = runConfig.fixedSeed ?? crypto.randomBytes(16).toString('hex');
+  const rng = createSeededRng(seed);
   const accessMethod =
-    runConfig.accessMethodOverride ??
-    ACCESS_METHODS[Math.floor(Math.random() * ACCESS_METHODS.length)];
+    runConfig.accessMethodOverride ?? ACCESS_METHODS[Math.floor(rng() * ACCESS_METHODS.length)];
   const now = Date.now();
 
   const session: Session = {
@@ -35,7 +36,7 @@ export const createSession = () => {
     createdAt: now,
     expiresAt: now + SESSION_TTL_MS,
     tabTokens: new Set<string>(),
-    pageCount: Math.floor(Math.random() * 6) + 10,
+    pageCount: randomInt(10, 15, rng),
     pageOrder: [],
     resultsByIndex: {},
   };

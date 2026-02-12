@@ -1,7 +1,8 @@
 import type { ChallengeContext } from './types.js';
+import { randomString } from './utils.js';
 
-export const generateSseDelivered = () => {
-  const value = `SSE-${Math.random().toString(36).slice(2, 10)}`.toUpperCase();
+export const generateSseDelivered = (context: ChallengeContext) => {
+  const value = `SSE-${randomString(8, context.rng)}`.toUpperCase();
   return { value };
 };
 

@@ -1,7 +1,8 @@
 import type { ChallengeContext } from './types.js';
+import { randomString } from './utils.js';
 
-export const generateAutoFilledJs = () => {
-  const value = `AUTO-${Math.random().toString(36).slice(2, 10)}`.toUpperCase();
+export const generateAutoFilledJs = (context: ChallengeContext) => {
+  const value = `AUTO-${randomString(8, context.rng)}`.toUpperCase();
   return { value };
 };
 

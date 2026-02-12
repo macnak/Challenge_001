@@ -3,17 +3,17 @@ import { randomInt, shuffle, pick } from './utils.js';
 
 const DELIMITERS = [',', ' ', '\n'];
 
-export const generateSortingSingle = () => {
-  const count = randomInt(10, 20);
-  const numbers = Array.from({ length: count }, () => randomInt(1, 200));
-  const order = Math.random() > 0.5 ? 'asc' : 'desc';
-  const delimiter = pick(DELIMITERS);
+export const generateSortingSingle = (context: ChallengeContext) => {
+  const count = randomInt(10, 20, context.rng);
+  const numbers = Array.from({ length: count }, () => randomInt(1, 200, context.rng));
+  const order = context.rng() > 0.5 ? 'asc' : 'desc';
+  const delimiter = pick(DELIMITERS, context.rng);
 
   return {
     numbers,
     order,
     delimiter,
-    display: shuffle(numbers),
+    display: shuffle(numbers, context.rng),
   };
 };
 

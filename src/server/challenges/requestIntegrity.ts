@@ -1,9 +1,10 @@
 import crypto from 'node:crypto';
 import type { ChallengeContext } from './types.js';
+import { randomHex } from './utils.js';
 
-export const generateRequestIntegrity = () => {
-  const secret = crypto.randomBytes(16).toString('hex');
-  const nonce = crypto.randomBytes(6).toString('hex');
+export const generateRequestIntegrity = (context: ChallengeContext) => {
+  const secret = randomHex(16, context.rng);
+  const nonce = randomHex(6, context.rng);
   return { secret, nonce };
 };
 

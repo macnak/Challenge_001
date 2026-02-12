@@ -1,5 +1,5 @@
 import type { ChallengeContext } from './types.js';
-import { randomInt, shuffle, pick } from './utils.js';
+import { randomInt, shuffle, pick, randomString } from './utils.js';
 
 const MARKERS = [
   { type: 'readonly', label: 'readonly' },
@@ -7,18 +7,19 @@ const MARKERS = [
   { type: 'aria-live', label: 'aria-live="polite"' },
 ];
 
-export const generateHiddenFieldMetadata = () => {
-  const total = randomInt(100, 200);
-  const token = `HF-${Math.random().toString(36).slice(2, 10)}`.toUpperCase();
-  const marker = pick(MARKERS);
-  const targetIndex = randomInt(0, total - 1);
+export const generateHiddenFieldMetadata = (context: ChallengeContext) => {
+  const total = randomInt(100, 200, context.rng);
+  const token = `HF-${randomString(8, context.rng)}`.toUpperCase();
+  const marker = pick(MARKERS, context.rng);
+  const targetIndex = randomInt(0, total - 1, context.rng);
 
   const fields = shuffle(
     Array.from({ length: total }, (_, idx) => {
-      const name = `field_${idx}_${Math.random().toString(36).slice(2, 6)}`;
+      const name = `field_${idx}_${randomString(4, context.rng)}`;
       const isTarget = idx === targetIndex;
       return { name, isTarget };
     }),
+    context.rng,
   );
 
   return {

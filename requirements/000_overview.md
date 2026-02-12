@@ -185,6 +185,15 @@ Status key: Not started / In progress / Done
 - Basic observability: request logs, session audit trail.
 - Accessible UI (keyboard navigation, readable instructions).
 
+## Tool profiles and difficulty tiers
+
+The challenge catalog can be tagged by tool affinity and difficulty, enabling curated
+session flows for different testing tools and skill levels.
+
+- Tool profiles: e.g., protocol-first (JMeter), browser-first (Playwright), mixed.
+- Difficulty tiers: easy, medium, advanced, grand master.
+- Interview presets: fixed profile + tier ordering for consistent candidate screening.
+
 ---
 
 # Gap questions (must be answered before implementation)

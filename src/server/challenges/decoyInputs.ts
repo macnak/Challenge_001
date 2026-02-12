@@ -1,16 +1,17 @@
 import type { ChallengeContext } from './types.js';
-import { randomInt, shuffle } from './utils.js';
+import { randomInt, shuffle, randomString } from './utils.js';
 
-export const generateDecoyInputs = () => {
-  const total = randomInt(8, 16);
-  const correct = `DV-${Math.random().toString(36).slice(2, 8)}`.toUpperCase();
-  const targetIndex = randomInt(0, total - 1);
+export const generateDecoyInputs = (context: ChallengeContext) => {
+  const total = randomInt(8, 16, context.rng);
+  const correct = `DV-${randomString(6, context.rng)}`.toUpperCase();
+  const targetIndex = randomInt(0, total - 1, context.rng);
   const inputs = shuffle(
     Array.from({ length: total }, (_, idx) => ({
-      name: `decoy_${idx}_${Math.random().toString(36).slice(2, 5)}`,
+      name: `decoy_${idx}_${randomString(3, context.rng)}`,
       value: idx === targetIndex ? correct : '',
       valid: idx === targetIndex,
     })),
+    context.rng,
   );
 
   return { inputs, correct };

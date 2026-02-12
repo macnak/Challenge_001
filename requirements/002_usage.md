@@ -43,8 +43,18 @@ You can override run behavior using environment variables or the provided script
 
 - `ACCESS_METHOD`: Fixes the access control method for all sessions.
   - Allowed values: `jwt`, `basic`, `none`, `user-pass`
+- `TOOL_PROFILE`: Filters challenges by tool affinity.
+  - Allowed values: `protocol`, `browser`, `mixed`
+- `DIFFICULTY_TIER`: Filters challenges by difficulty tier (inclusive).
+  - Allowed values: `easy`, `medium`, `advanced`, `grand-master`
+- `INTERVIEW_PRESET`: Enables deterministic interview runs.
+  - Format: `<profile>-<tier>` (e.g., `protocol-medium`, `browser-easy`)
+  - Forces fixed order and a deterministic seed derived from the preset.
+- `FIXED_SEED`: Forces deterministic session values and ordering.
+  - Useful with `TOOL_PROFILE` + `DIFFICULTY_TIER` for repeatable runs.
 - `FIXED_ORDER`: When set to `1`, uses a fixed challenge order containing all available challenge pages.
 - `SHOW_PER_PAGE_RESULTS`: When set to `1`, shows a pass/fail result after each submission with options to retry or continue.
+- `SHOW_PER_PAGE_EXPLANATION`: When set to `1`, shows a brief explanation on failed per-page results.
 - `BLOCK_CONTINUE_ON_FAILURE`: When set to `1`, hides the Continue button on the per-page result screen until the page is correct.
 
 ### Example (Docker)
@@ -52,6 +62,7 @@ You can override run behavior using environment variables or the provided script
 ```
 docker run -p 3000:3000 \
 	-e ACCESS_METHOD=basic \
+	-e INTERVIEW_PRESET=protocol-medium \
 	-e FIXED_ORDER=1 \
 	-e SHOW_PER_PAGE_RESULTS=1 \
 	-e BLOCK_CONTINUE_ON_FAILURE=1 \
@@ -68,6 +79,7 @@ services:
 			- "3000:3000"
 		environment:
 			ACCESS_METHOD: basic
+			INTERVIEW_PRESET: protocol-medium
 			FIXED_ORDER: "1"
 			SHOW_PER_PAGE_RESULTS: "1"
 			BLOCK_CONTINUE_ON_FAILURE: "1"
@@ -85,13 +97,39 @@ docker compose up
 - `npm run dev:fixed-order`
 - `npm run dev:per-page-results`
 - `npm run dev:per-page-results:strict`
+- `npm run dev:per-page-results:explain`
 - `npm run dev:guided` (fixed access + fixed order + per-page results)
 - `npm run dev:guided:strict` (guided + block continue on failure)
+- `npm run dev:profile:protocol`
+- `npm run dev:profile:browser`
+- `npm run dev:profile:mixed`
+- `npm run dev:tier:easy`
+- `npm run dev:tier:medium`
+- `npm run dev:tier:advanced`
+- `npm run dev:tier:grand-master`
+- `npm run dev:interview:protocol-medium`
+- `npm run dev:interview:browser-medium`
+- `npm run dev:seed:fixed`
+
+## Tool profiles and difficulty tiers
+
+You can filter the challenge catalog by tool affinity and difficulty. Tiers are inclusive
+(`medium` includes `easy` + `medium`, etc.).
+
+- Tool profiles: `protocol` (JMeter-like), `browser` (Playwright-like), `mixed`
+- Difficulty tiers: `easy`, `medium`, `advanced`, `grand-master`
 
 ## Optional tag for registry
 
 ```
 docker tag challenge-001:latest <registry>/<namespace>/challenge-001:latest
+```
+
+Versioned tag (uses package.json version):
+
+```
+npm run docker:tag:version
+npm run docker:push:version
 ```
 
 Provide registry details to upload (registry URL, namespace, and credentials).

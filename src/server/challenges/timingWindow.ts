@@ -1,9 +1,9 @@
 import type { ChallengeContext } from './types.js';
 import { randomInt } from './utils.js';
 
-export const generateTimingWindow = () => {
-  const minDelayMs = randomInt(2000, 6000);
-  const maxDelayMs = randomInt(12000, 20000);
+export const generateTimingWindow = (context: ChallengeContext) => {
+  const minDelayMs = randomInt(2000, 6000, context.rng);
+  const maxDelayMs = randomInt(12000, 20000, context.rng);
   const createdAt = Date.now();
 
   return {

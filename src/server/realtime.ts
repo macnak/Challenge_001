@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { getSession } from './session.js';
 import { getOrCreateState } from './challenges/engine.js';
-import { getChallengeRuntimeById } from './challenges/runtimeIndex.js';
+import { buildChallengeContext, getChallengeRuntimeById } from './challenges/runtimeIndex.js';
 
 export const registerRealtime = (app: FastifyInstance) => {
   app.get('/session/:sessionId/events', async (request, reply) => {
@@ -22,10 +22,12 @@ export const registerRealtime = (app: FastifyInstance) => {
       .flushHeaders();
 
     const integrityRuntime = getChallengeRuntimeById('request-integrity');
-    const integrityState = getOrCreateState({ session, index: 14 }, integrityRuntime);
+    const integrityContext = buildChallengeContext(session, 14, integrityRuntime.id);
+    const integrityState = getOrCreateState(integrityContext, integrityRuntime);
 
     const sseRuntime = getChallengeRuntimeById('sse-delivered');
-    const sseState = getOrCreateState({ session, index: 7 }, sseRuntime);
+    const sseContext = buildChallengeContext(session, 7, sseRuntime.id);
+    const sseState = getOrCreateState(sseContext, sseRuntime);
 
     const integrityPayload = {
       challengeId: integrityRuntime.id,
@@ -75,7 +77,8 @@ export const registerRealtime = (app: FastifyInstance) => {
       }
 
       const runtime = getChallengeRuntimeById('ws-delivered');
-      const state = getOrCreateState({ session, index: 8 }, runtime);
+      const context = buildChallengeContext(session, 8, runtime.id);
+      const state = getOrCreateState(context, runtime);
       connection.socket.send(
         JSON.stringify({
           type: 'challenge.response',

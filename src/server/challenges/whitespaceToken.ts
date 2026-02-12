@@ -1,17 +1,17 @@
-import { randomInt } from './utils.js';
+import { randomInt, randomString } from './utils.js';
 import type { ChallengeContext } from './types.js';
 
 const WHITESPACE = [' ', '\n', '\t', '\r'];
 
-export const generateWhitespaceToken = () => {
-  const token = `TK-${Math.random().toString(36).slice(2, 10)}`.toUpperCase();
+export const generateWhitespaceToken = (context: ChallengeContext) => {
+  const token = `TK-${randomString(8, context.rng)}`.toUpperCase();
   const prefix = Array.from(
-    { length: randomInt(4, 12) },
-    () => WHITESPACE[randomInt(0, WHITESPACE.length - 1)],
+    { length: randomInt(4, 12, context.rng) },
+    () => WHITESPACE[randomInt(0, WHITESPACE.length - 1, context.rng)],
   ).join('');
   const suffix = Array.from(
-    { length: randomInt(4, 12) },
-    () => WHITESPACE[randomInt(0, WHITESPACE.length - 1)],
+    { length: randomInt(4, 12, context.rng) },
+    () => WHITESPACE[randomInt(0, WHITESPACE.length - 1, context.rng)],
   ).join('');
 
   return {
