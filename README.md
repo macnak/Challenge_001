@@ -34,6 +34,13 @@ docker pull macnak/challenge-001:latest
 docker run -p 3000:3000 --name challenge-001 macnak/challenge-001:latest
 ```
 
+Versioned release example:
+
+```
+docker pull macnak/challenge-001:0.1.1
+docker run -p 3000:3000 --name challenge-001-0-1-1 macnak/challenge-001:0.1.1
+```
+
 docker-compose:
 
 ```
@@ -56,3 +63,11 @@ See requirements in requirements/000_overview.md.
 - Tool-aware challenge profiles (protocol tools like JMeter vs browser tools like Playwright)
 - Difficulty tiers that order challenges from easy to advanced
 - Interview presets that map profiles + tiers for candidate screening
+
+## Roadmap (next challenge additions)
+
+- Downloaded file token extraction (plain file)
+- Downloaded file decode/unpack (encoded or compressed file)
+- Create-and-upload file verification
+
+See requirements details in [requirements/000_overview.md](requirements/000_overview.md).

@@ -1,6 +1,8 @@
 import type { AccessMethod } from './session.js';
 import type { DifficultyTier, ToolProfile } from './challenges/types.js';
 
+type ApiTableRuleMode = 'sku' | 'compound' | 'rating-under-cap';
+
 const parseBoolean = (value: string | undefined) => {
   if (!value) {
     return false;
@@ -55,6 +57,31 @@ const fixedSeed = interviewPreset
   ? `preset:${interviewPreset.profile}-${interviewPreset.tier}`
   : process.env.FIXED_SEED?.trim() || null;
 
+const parseApiTableRuleMode = (value: string | undefined): ApiTableRuleMode | null => {
+  if (!value) {
+    return null;
+  }
+
+  const normalized = value.toLowerCase().replace(/_/g, '-').trim();
+  return ['sku', 'compound', 'rating-under-cap'].includes(normalized)
+    ? (normalized as ApiTableRuleMode)
+    : null;
+};
+
+const parseApiTableRuleSequence = (value: string | undefined): ApiTableRuleMode[] => {
+  if (!value) {
+    return [];
+  }
+
+  return value
+    .split(',')
+    .map((part) => parseApiTableRuleMode(part))
+    .filter((mode): mode is ApiTableRuleMode => mode !== null);
+};
+
+const apiTableRuleMode = parseApiTableRuleMode(process.env.API_TABLE_RULE_MODE);
+const apiTableRuleSequence = parseApiTableRuleSequence(process.env.API_TABLE_RULE_SEQUENCE);
+
 export const runConfig = {
   accessMethodOverride,
   toolProfileOverride: interviewPreset?.profile ?? toolProfileOverride,
@@ -65,4 +92,6 @@ export const runConfig = {
   showPerPageResults: parseBoolean(process.env.SHOW_PER_PAGE_RESULTS),
   showPerPageExplanation: parseBoolean(process.env.SHOW_PER_PAGE_EXPLANATION),
   blockContinueOnFailure: parseBoolean(process.env.BLOCK_CONTINUE_ON_FAILURE),
+  apiTableRuleMode,
+  apiTableRuleSequence,
 };

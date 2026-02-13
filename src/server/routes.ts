@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import {
   createSession,
   createTabToken,
@@ -18,10 +18,11 @@ import {
 } from './challenges/runtimeIndex.js';
 import { createSeededRng, shuffle } from './challenges/utils.js';
 import { runConfig } from './config.js';
+import { buildApiTablePayload } from './challenges/apiTableGuid.js';
 
 const SESSION_COOKIE = 'challenge_session';
 
-const normalizePayload = (body: unknown) => {
+const normalizeBodyPayload = (body: unknown) => {
   if (!body || typeof body !== 'object') {
     return {} as Record<string, unknown>;
   }
@@ -33,6 +34,33 @@ const normalizePayload = (body: unknown) => {
   }
 
   return body as Record<string, unknown>;
+};
+
+const normalizePayload = async (request: FastifyRequest) => {
+  if (request.isMultipart()) {
+    const payload: Record<string, unknown> = {};
+
+    for await (const part of request.parts()) {
+      if (part.type === 'file') {
+        const buffer = await part.toBuffer();
+        const uploaded = {
+          filename: part.filename ?? '',
+          contentType: part.mimetype ?? '',
+          content: buffer.toString('utf8'),
+        };
+        payload[part.fieldname] = uploaded;
+        if (part.fieldname === 'uploadFile') {
+          payload.uploadedFile = uploaded;
+        }
+      } else {
+        payload[part.fieldname] = part.value;
+      }
+    }
+
+    return payload;
+  }
+
+  return normalizeBodyPayload(request.body);
 };
 
 export const registerRoutes = (app: FastifyInstance) => {
@@ -179,10 +207,11 @@ export const registerRoutes = (app: FastifyInstance) => {
     }
 
     const submitAction = `/m/${session.accessMethod}/challenge/${pageIndex}/submit?t=${tabToken}`;
+    const formEnctype = runtime.id === 'create-upload-file' ? 'enctype="multipart/form-data"' : '';
     const html = renderPage({
       title: `Challenge ${index}`,
       body: `
-        <form method="post" action="${submitAction}">
+        <form method="post" action="${submitAction}" ${formEnctype}>
           ${challengeMarkup}
           <p class="muted">Session access method: ${session.accessMethod}</p>
           <div class="row">
@@ -231,7 +260,7 @@ export const registerRoutes = (app: FastifyInstance) => {
       : getChallengeRuntimeById('whitespace-token');
     const context = buildChallengeContext(session, pageIndex, runtime.id);
     const state = getOrCreateState(context, runtime);
-    const payload = normalizePayload(request.body);
+    const payload = await normalizePayload(request);
     const passed = runtime.validate(context, state.data, payload);
 
     setChallengeResult(session, pageIndex, passed);
@@ -273,6 +302,134 @@ export const registerRoutes = (app: FastifyInstance) => {
     }
 
     reply.redirect(`/m/${session.accessMethod}/challenge/${pageIndex + 1}?t=${tabToken}`);
+  });
+
+  app.get('/m/:method/challenge/:index/download', async (request, reply) => {
+    const sessionId = request.cookies[SESSION_COOKIE];
+    const session = getSession(sessionId);
+    const { method, index } = request.params as { method: string; index: string };
+    const tabToken =
+      request.query && typeof request.query === 'object'
+        ? (request.query as { t?: string }).t
+        : undefined;
+
+    if (!session) {
+      reply.code(404).type('text/plain').send('Session not found');
+      return;
+    }
+
+    if (!validateTabToken(session, tabToken)) {
+      reply.code(404).type('text/plain').send('Not found');
+      return;
+    }
+
+    if (method !== session.accessMethod) {
+      reply.code(404).type('text/plain').send('Not found');
+      return;
+    }
+
+    const pageIndex = Number(index);
+    if (Number.isNaN(pageIndex) || pageIndex < 1 || pageIndex > session.pageCount) {
+      reply.code(404).type('text/plain').send('Not found');
+      return;
+    }
+
+    const runtimeId = session.pageOrder[pageIndex - 1];
+    const runtime = runtimeId
+      ? getChallengeRuntimeById(runtimeId)
+      : getChallengeRuntimeById('whitespace-token');
+
+    const downloadableIds = new Set(['downloaded-file-plain', 'downloaded-file-encoded']);
+    if (!downloadableIds.has(runtime.id)) {
+      reply.code(404).type('text/plain').send('Not found');
+      return;
+    }
+
+    const context = buildChallengeContext(session, pageIndex, runtime.id);
+    const state = getOrCreateState(context, runtime);
+    const filename =
+      typeof state.data.filename === 'string' ? state.data.filename : `challenge-${pageIndex}.txt`;
+    const content = typeof state.data.content === 'string' ? state.data.content : '';
+
+    reply
+      .header('Content-Type', 'text/plain; charset=utf-8')
+      .header('Content-Disposition', `attachment; filename="${filename}"`)
+      .send(content);
+  });
+
+  app.get('/m/:method/challenge/:index/data', async (request, reply) => {
+    const sessionId = request.cookies[SESSION_COOKIE];
+    const session = getSession(sessionId);
+    const { method, index } = request.params as { method: string; index: string };
+    const tabToken =
+      request.query && typeof request.query === 'object'
+        ? (request.query as { t?: string }).t
+        : undefined;
+
+    if (!session) {
+      reply.code(404).type('application/json').send({ error: 'session_not_found' });
+      return;
+    }
+
+    if (!validateTabToken(session, tabToken)) {
+      reply.code(404).type('application/json').send({ error: 'not_found' });
+      return;
+    }
+
+    if (method !== session.accessMethod) {
+      reply.code(404).type('application/json').send({ error: 'not_found' });
+      return;
+    }
+
+    const pageIndex = Number(index);
+    if (Number.isNaN(pageIndex) || pageIndex < 1 || pageIndex > session.pageCount) {
+      reply.code(404).type('application/json').send({ error: 'not_found' });
+      return;
+    }
+
+    const runtimeId = session.pageOrder[pageIndex - 1];
+    const runtime = runtimeId
+      ? getChallengeRuntimeById(runtimeId)
+      : getChallengeRuntimeById('whitespace-token');
+
+    if (runtime.id !== 'api-table-guid') {
+      reply.code(404).type('application/json').send({ error: 'not_found' });
+      return;
+    }
+
+    const context = buildChallengeContext(session, pageIndex, runtime.id);
+    const state = getOrCreateState(context, runtime);
+    const payload = buildApiTablePayload(
+      state.data as {
+        products: {
+          guid: string;
+          sku: string;
+          name: string;
+          category: string;
+          priceCents: number;
+          stock: number;
+          rating: number;
+        }[];
+        targetRule:
+          | { mode: 'sku'; sku: string; instruction: string }
+          | {
+              mode: 'compound';
+              category: string;
+              metric: 'stock';
+              order: 'desc';
+              instruction: string;
+            }
+          | {
+              mode: 'rating-under-cap';
+              priceCapCents: number;
+              metric: 'rating';
+              order: 'desc';
+              instruction: string;
+            };
+      },
+    );
+
+    reply.type('application/json').send(payload);
   });
 
   app.get('/m/:method/summary', async (request, reply) => {

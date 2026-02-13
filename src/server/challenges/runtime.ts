@@ -53,6 +53,32 @@ import {
   renderSelectorVariant,
   validateSelectorVariant,
 } from './selectorVariant.js';
+import {
+  generateDownloadedFilePlain,
+  renderDownloadedFilePlain,
+  validateDownloadedFilePlain,
+} from './downloadedFilePlain.js';
+import {
+  generateDownloadedFileEncoded,
+  renderDownloadedFileEncoded,
+  validateDownloadedFileEncoded,
+} from './downloadedFileEncoded.js';
+import {
+  generateCreateUploadFile,
+  renderCreateUploadFile,
+  validateCreateUploadFile,
+} from './createUploadFile.js';
+import { generateApiTableGuid, renderApiTableGuid, validateApiTableGuid } from './apiTableGuid.js';
+import {
+  generateLargePoolSelection,
+  renderLargePoolSelection,
+  validateLargePoolSelection,
+} from './largePoolSelection.js';
+import {
+  generateWordOrderPosition,
+  renderWordOrderPosition,
+  validateWordOrderPosition,
+} from './wordOrderPosition.js';
 
 const placeholderValidate = () => false;
 
@@ -312,6 +338,125 @@ export const challengeRuntimes: ChallengeRuntime[] = [
     generate: (context) => generateHeaderDerived(context),
     validate: (_context, state, payload) =>
       validateHeaderDerived(state as { value: string }, payload),
+  },
+  {
+    id: 'downloaded-file-plain',
+    title: 'Downloaded File Token (Plain)',
+    toolAffinity: 'either',
+    difficulty: 'medium',
+    explain: 'Download the file, read TOKEN=..., and submit the token value.',
+    render: (context: ChallengeContext, state) =>
+      renderDownloadedFilePlain(context, state as { filename: string }),
+    generate: (context) => generateDownloadedFilePlain(context),
+    validate: (_context, state, payload) =>
+      validateDownloadedFilePlain(state as { token: string }, payload),
+  },
+  {
+    id: 'downloaded-file-encoded',
+    title: 'Downloaded File Token (Encoded)',
+    toolAffinity: 'either',
+    difficulty: 'advanced',
+    explain: 'Download the file, decode payload per rule, and submit the token.',
+    render: (context: ChallengeContext, state) =>
+      renderDownloadedFileEncoded(
+        context,
+        state as { encoding: 'base64' | 'hex'; filename: string },
+      ),
+    generate: (context) => generateDownloadedFileEncoded(context),
+    validate: (_context, state, payload) =>
+      validateDownloadedFileEncoded(
+        state as { token: string; encoding: 'base64' | 'hex' },
+        payload,
+      ),
+  },
+  {
+    id: 'create-upload-file',
+    title: 'Create and Upload File',
+    toolAffinity: 'browser',
+    difficulty: 'advanced',
+    explain: 'Create a file with required filename/content rule, upload it, and submit.',
+    render: (context: ChallengeContext, state) =>
+      renderCreateUploadFile(
+        context,
+        state as { token: string; encoding: 'plain' | 'base64'; expectedFilename: string },
+      ),
+    generate: (context) => generateCreateUploadFile(context),
+    validate: (_context, state, payload) =>
+      validateCreateUploadFile(
+        state as { token: string; encoding: 'plain' | 'base64'; expectedFilename: string },
+        payload,
+      ),
+  },
+  {
+    id: 'api-table-guid',
+    title: 'API Table GUID Selection',
+    toolAffinity: 'either',
+    difficulty: 'medium',
+    explain: 'Call the products API, apply the target rule, and submit the matching row GUID.',
+    render: (context: ChallengeContext, state) =>
+      renderApiTableGuid(
+        context,
+        state as {
+          targetRule:
+            | { mode: 'sku'; sku: string; instruction: string }
+            | {
+                mode: 'compound';
+                category: string;
+                metric: 'stock';
+                order: 'desc';
+                instruction: string;
+              }
+            | {
+                mode: 'rating-under-cap';
+                priceCapCents: number;
+                metric: 'rating';
+                order: 'desc';
+                instruction: string;
+              };
+        },
+      ),
+    generate: (context) => generateApiTableGuid(context),
+    validate: (_context, state, payload) =>
+      validateApiTableGuid(state as { targetGuid: string }, payload),
+  },
+  {
+    id: 'large-pool-selection',
+    title: 'Large-pool Item Selection',
+    toolAffinity: 'either',
+    difficulty: 'medium',
+    explain: 'Select exactly the instructed item(s) from randomized options and submit.',
+    render: (context: ChallengeContext, state) =>
+      renderLargePoolSelection(
+        context,
+        state as { selectionType: 'checkbox' | 'radio'; options: string[]; targets: string[] },
+      ),
+    generate: (context) => generateLargePoolSelection(context),
+    validate: (_context, state, payload) =>
+      validateLargePoolSelection(
+        state as { selectionType: 'checkbox' | 'radio'; targets: string[] },
+        payload,
+      ),
+  },
+  {
+    id: 'word-order-position',
+    title: 'Word Order Position',
+    toolAffinity: 'either',
+    difficulty: 'medium',
+    explain: 'Sort words per rule and submit the required positional word.',
+    render: (context: ChallengeContext, state) =>
+      renderWordOrderPosition(
+        context,
+        state as {
+          words: string[];
+          direction: 'asc' | 'desc';
+          caseMode: 'sensitive' | 'insensitive';
+          from: 'top' | 'bottom';
+          nth: number;
+        },
+      ),
+    generate: (context) => generateWordOrderPosition(context),
+    validate: (_context, state, payload) =>
+      validateWordOrderPosition(state as { expected: string }, payload),
   },
 ];
 

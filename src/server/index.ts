@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
 import fastifyCookie from '@fastify/cookie';
 import fastifyFormbody from '@fastify/formbody';
+import fastifyMultipart from '@fastify/multipart';
 import fastifyWebsocket from '@fastify/websocket';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,6 +22,7 @@ app.register(fastifyStatic, {
 
 app.register(fastifyCookie);
 app.register(fastifyFormbody);
+app.register(fastifyMultipart);
 app.register(fastifyWebsocket);
 
 app.addContentTypeParser(

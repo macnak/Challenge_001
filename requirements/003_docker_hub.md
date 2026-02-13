@@ -27,6 +27,7 @@ Challenge 001 is an Automation / Performance Challenge web application designed 
 ## Tags
 
 - `latest`
+- `0.1.1`
 
 ## Usage
 
@@ -34,12 +35,14 @@ Pull the image:
 
 ```
 docker pull macnak/challenge-001:latest
+docker pull macnak/challenge-001:0.1.1
 ```
 
 Run:
 
 ```
 docker run -p 3000:3000 --name challenge-001 macnak/challenge-001:latest
+docker run -p 3000:3000 --name challenge-001-0-1-1 macnak/challenge-001:0.1.1
 ```
 
 Open: http://localhost:3000

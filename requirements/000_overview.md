@@ -59,6 +59,127 @@ Build an Automation / Performance Challenge web application designed to be diffi
 
 - Optional SPA-only mode (API-driven) as an alternative mode.
 
+## Proposed vNext challenges (file I/O)
+
+These are approved candidate challenges for the next catalog expansion. They are
+designed to increase realism for scripting tools (Playwright/JMeter/curl + helper
+scripts) by requiring download handling, decoding, local file operations, and upload.
+
+16. **Downloaded file token (plain)**
+    - Challenge id (proposed): `downloaded-file-plain`
+    - Flow: On page load, server triggers a file download containing a random token/text.
+      User must read file contents and submit the exact required value in a text input.
+    - Suggested tool affinity: `either`
+    - Suggested difficulty tier: `medium`
+    - Suggested level placement: early-mid (after core extraction/sorting pages)
+    - Validation:
+      - token must match server-generated session value
+      - optional strict mode: require file name match when included in instructions
+
+17. **Downloaded file token (encoded/compressed)**
+    - Challenge id (proposed): `downloaded-file-encoded`
+    - Flow: On page load, server downloads a file that is encoded/compressed
+      (e.g., Base64, gzip, zip). User must decode/unpack correctly, extract random
+      token, and submit it.
+    - Suggested tool affinity: `either` (leans `browser` if download trigger is JS-only)
+    - Suggested difficulty tier: `advanced`
+    - Suggested level placement: mid-late
+    - Validation:
+      - decoded token must match server-generated session value
+      - encoded format selection must be session-randomized
+      - include deterministic metadata (header or on-page hint) to keep challenge fair
+
+18. **Create-and-upload file**
+    - Challenge id (proposed): `create-upload-file`
+    - Flow: Page displays random required content (and optional encoding rule). User
+      script must create a local file with exact expected content/format and upload it.
+      Server verifies uploaded content.
+    - Suggested tool affinity: `browser`
+    - Suggested difficulty tier: `advanced` to `grand-master`
+    - Suggested level placement: late (near end of session)
+    - Validation:
+      - uploaded file must exist and be non-empty
+      - decoded/normalized file content must match expected token
+      - optional strict checks: expected filename, extension, checksum, MIME type
+
+19. **API table row GUID selection**
+    - Challenge id (proposed): `api-table-guid`
+    - Flow: Page loads table data from a challenge API call returning JSON with
+      `target` selection details and randomized `products[]` rows (5–20 rows,
+      ~6 columns). User must identify the target row and submit its GUID.
+    - Suggested tool affinity: `either`
+    - Suggested difficulty tier: `medium` baseline, `advanced` variant
+    - Suggested level placement: early-mid baseline; mid-late for compound-rule mode
+    - Validation:
+      - submitted GUID must exactly match target row GUID for session
+      - target criteria and product set must be deterministic per session seed
+      - API endpoint should enforce same session/tab token checks as page routes
+    - Suggested variants:
+      - Baseline (`medium`): exact SKU match rule.
+      - Advanced (`advanced`): compound rule (e.g., highest stock within a category).
+      - Advanced (`advanced`): highest rating where price is under a stated cap.
+
+20. **Large-pool item selection (checkbox/radio)**
+    - Challenge id (proposed): `large-pool-selection`
+    - Flow: Display 5–20 options sampled from a large canonical pool (~200 items).
+      Prompt instructs user to select one or more specific target items (checkbox)
+      or a single target (radio), then submit.
+    - Suggested tool affinity: `either`
+    - Suggested difficulty tier: `medium` baseline, `advanced` variant
+    - Suggested level placement: early-mid baseline; mid-late for multi-rule selection
+    - Validation:
+      - checkbox mode: submitted set must exactly match expected targets (no extras)
+      - radio mode: submitted value must exactly match single expected target
+      - enforce min/max rendered option count (5–20) and deterministic per-session sampling
+    - Suggested variants:
+      - Baseline (`medium`): explicit target labels listed in instruction.
+      - Advanced (`advanced`): rule-driven targets (e.g., category + suffix match) with
+        strict count requirement (e.g., “select exactly 3”).
+
+21. **Large-pool word ordering + positional extraction**
+    - Challenge id (proposed): `word-order-position`
+    - Flow: Show 10–20 random words sampled from a large canonical pool (~200 words).
+      Instruction provides sort direction (ascending/descending) and positional rule
+      (e.g., 3rd from top / 4th from bottom). User submits the selected word.
+    - Suggested tool affinity: `either`
+    - Suggested difficulty tier: `medium` baseline, `advanced` variant
+    - Suggested level placement: early-mid baseline; mid-late for case/locale tie-breaker rules
+    - Validation:
+      - compute expected answer server-side from displayed words + active sort rules
+      - submitted word must exactly match expected normalized result
+      - deterministic per-session subset sampling from large word pool
+    - Suggested variants:
+      - Baseline (`medium`): plain lexical sort + Nth position extraction.
+      - Advanced (`advanced`): explicit case-sensitivity or locale collation rules,
+        plus tie-breaker behavior for duplicate-equivalent values.
+
+### Tier and profile application guidance
+
+- `protocol` profile:
+  - Include 16 by default.
+  - Include 17 only when encoding details are accessible via headers/body and solvable
+    without full browser automation.
+  - Exclude 18 unless a multipart upload endpoint is explicitly documented and intended
+    for protocol-tool workflows.
+- `browser` profile:
+  - Include all three challenges.
+  - Prefer JS-triggered download and upload interactions to test full browser scripts.
+- `mixed` profile:
+  - Include all three, but cap to one high-complexity file challenge per session to
+    avoid over-weighting file I/O relative to other puzzle types.
+  - Include 19 as a core medium bridge between DOM-only and file/realtime pages.
+  - Include 20 and 21 as medium bridge challenges for deterministic parsing + selection.
+
+### Fairness and anti-shortcut constraints
+
+- Content must be deterministic per session seed and challenge id.
+- Randomize token/value each session; do not reuse fixed sample files.
+- Do not embed answer directly in visible HTML when download/upload path is required.
+- Provide at least one actionable hint for decode/compression method when used.
+- Keep strict checks configurable by difficulty tier to avoid accidental over-hardening.
+- For list/word challenges, sample displayed values from large source pools (~200)
+  to reduce memorization and precomputed-answer strategies.
+
 ## UX requirements
 
 - Server-rendered HTML per challenge; React may optionally hydrate for browser UX.
