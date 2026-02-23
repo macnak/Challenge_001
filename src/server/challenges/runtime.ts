@@ -79,6 +79,11 @@ import {
   renderWordOrderPosition,
   validateWordOrderPosition,
 } from './wordOrderPosition.js';
+import {
+  generateMarkdownPdfUpload,
+  renderMarkdownPdfUpload,
+  validateMarkdownPdfUpload,
+} from './markdownPdfUpload.js';
 
 const placeholderValidate = () => false;
 
@@ -457,6 +462,30 @@ export const challengeRuntimes: ChallengeRuntime[] = [
     generate: (context) => generateWordOrderPosition(context),
     validate: (_context, state, payload) =>
       validateWordOrderPosition(state as { expected: string }, payload),
+  },
+  {
+    id: 'markdown-pdf-upload',
+    title: 'Markdown to PDF Upload',
+    toolAffinity: 'either',
+    difficulty: 'grand-master',
+    explain: 'Convert disabled markdown into a PDF file and upload the expected artifact.',
+    render: (context: ChallengeContext, state) =>
+      renderMarkdownPdfUpload(
+        context,
+        state as {
+          markdown: string;
+          expectedFilename: string;
+        },
+      ),
+    generate: (context) => generateMarkdownPdfUpload(context),
+    validate: (_context, state, payload) =>
+      validateMarkdownPdfUpload(
+        state as {
+          expectedFilename: string;
+          expectedHash: string;
+        },
+        payload,
+      ),
   },
 ];
 

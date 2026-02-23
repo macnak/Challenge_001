@@ -22,6 +22,21 @@ import { buildApiTablePayload } from './challenges/apiTableGuid.js';
 
 const SESSION_COOKIE = 'challenge_session';
 
+const difficultyToTierScore = (difficulty: string) => {
+  switch (difficulty) {
+    case 'easy':
+      return 3;
+    case 'medium':
+      return 6;
+    case 'advanced':
+      return 8;
+    case 'grand-master':
+      return 9;
+    default:
+      return 5;
+  }
+};
+
 const normalizeBodyPayload = (body: unknown) => {
   if (!body || typeof body !== 'object') {
     return {} as Record<string, unknown>;
@@ -47,6 +62,7 @@ const normalizePayload = async (request: FastifyRequest) => {
           filename: part.filename ?? '',
           contentType: part.mimetype ?? '',
           content: buffer.toString('utf8'),
+          contentBase64: buffer.toString('base64'),
         };
         payload[part.fieldname] = uploaded;
         if (part.fieldname === 'uploadFile') {
@@ -65,9 +81,42 @@ const normalizePayload = async (request: FastifyRequest) => {
 
 export const registerRoutes = (app: FastifyInstance) => {
   app.get('/', async (_request, reply) => {
+    const infernoLanding = runConfig.themePack !== 'neutral';
     const html = renderPage({
       title: 'Challenge 001',
-      body: `
+      tierScore: 1,
+      minimalEffects: infernoLanding,
+      body: infernoLanding
+        ? `
+        <section class="inferno-landing inferno-photo-mode">
+          <div class="inferno-photo-hero">
+            <img
+              class="inferno-photo"
+              src="/public/inferno-gate-hero.png"
+              alt="Dante-inspired infernal gate"
+            />
+            <div class="inferno-photo-vignette"></div>
+            <p
+              class="latin-inscription latin-on-photo"
+              tabindex="0"
+              title="Abandon all hope, ye who enter here."
+              aria-label="Omnem spem relinquite, qui intratis"
+            >
+              <span class="latin-text">Omnem spem relinquite, qui intratis</span>
+              <span class="latin-translation">Abandon all hope, ye who enter here.</span>
+            </p>
+          </div>
+          <h1>Challenge 001</h1>
+          <p class="muted">Threshold of the first circle. Precision over speed.</p>
+          <p class="muted">Drop your generated gate image in <code>public/inferno-gate-hero.png</code> to replace this scene.</p>
+          <p>Every page is a trial. Extract, verify, and submit with discipline.</p>
+          <div class="row">
+            <a class="button primary inferno-cta" href="/start">Cross the Threshold</a>
+          </div>
+          <p class="muted" style="margin-top:10px; font-style:italic;">Cowards remain in the Vestibule.</p>
+        </section>
+      `
+        : `
         <h1>Challenge 001</h1>
         <p class="muted">There be dragons beyond this point.</p>
         <p>This challenge is designed to mislead assumptions. Slow down and inspect each page.</p>
@@ -126,6 +175,7 @@ export const registerRoutes = (app: FastifyInstance) => {
     if (!session) {
       const html = renderPage({
         title: 'Session expired',
+        tierScore: 6,
         body: `
           <h1>Session expired</h1>
           <p class="muted">Time ran out. Final result: <strong>Fail</strong>.</p>
@@ -163,6 +213,7 @@ export const registerRoutes = (app: FastifyInstance) => {
     if (!session) {
       const html = renderPage({
         title: 'Session expired',
+        tierScore: 6,
         body: `
           <h1>Session expired</h1>
           <p class="muted">Time ran out. Final result: <strong>Fail</strong>.</p>
@@ -207,9 +258,11 @@ export const registerRoutes = (app: FastifyInstance) => {
     }
 
     const submitAction = `/m/${session.accessMethod}/challenge/${pageIndex}/submit?t=${tabToken}`;
-    const formEnctype = runtime.id === 'create-upload-file' ? 'enctype="multipart/form-data"' : '';
+    const multipartChallenges = new Set(['create-upload-file', 'markdown-pdf-upload']);
+    const formEnctype = multipartChallenges.has(runtime.id) ? 'enctype="multipart/form-data"' : '';
     const html = renderPage({
       title: `Challenge ${index}`,
+      tierScore: difficultyToTierScore(runtime.difficulty),
       body: `
         <form method="post" action="${submitAction}" ${formEnctype}>
           ${challengeMarkup}
@@ -282,6 +335,7 @@ export const registerRoutes = (app: FastifyInstance) => {
           : '';
       const html = renderPage({
         title: `Challenge ${pageIndex} Result`,
+        tierScore: difficultyToTierScore(runtime.difficulty),
         body: `
           <h1>Challenge ${pageIndex} Result</h1>
           <p class="muted">Result: <strong>${passed ? 'Correct' : 'Incorrect'}</strong></p>
@@ -478,6 +532,7 @@ export const registerRoutes = (app: FastifyInstance) => {
 
     const html = renderPage({
       title: 'Summary',
+      tierScore: passed ? 3 : 6,
       body: `
         <h1>Final Summary</h1>
         <p class="muted">Result: <strong>${passed ? 'Pass' : 'Fail'}</strong></p>

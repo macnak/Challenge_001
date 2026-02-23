@@ -59,7 +59,88 @@ Build an Automation / Performance Challenge web application designed to be diffi
 
 - Optional SPA-only mode (API-driven) as an alternative mode.
 
-## Proposed vNext challenges (file I/O)
+## Current implemented challenge catalog snapshot (v0.1.1)
+
+The currently implemented runtime catalog contains 25 challenge pages. This section is
+the source-of-truth snapshot for planning theme-tier coverage and client training packs.
+
+1. `whitespace-token`
+2. `sorting-single`
+3. `sorting-multi`
+4. `radio-checkbox`
+5. `hidden-field-metadata`
+6. `hidden-field-metadata-auto`
+7. `auto-filled-js`
+8. `sse-delivered`
+9. `ws-delivered`
+10. `selector-variant-a`
+11. `selector-variant-b`
+12. `dom-shuffling`
+13. `shadow-canvas`
+14. `decoy-inputs`
+15. `timing-window`
+16. `token-assembly`
+17. `request-integrity`
+18. `header-derived`
+19. `downloaded-file-plain`
+20. `downloaded-file-encoded`
+21. `create-upload-file`
+22. `api-table-guid`
+23. `large-pool-selection`
+24. `word-order-position`
+25. `markdown-pdf-upload`
+
+## Challenge level matrix (1-9) by approach
+
+Use this matrix as the default tier assignment reference for session builders.
+Values are presentation levels (`1` easiest, `9` hardest). `N/A` means the challenge
+is not part of the default profile mix for that approach (but may still be technically possible).
+
+| Challenge page               | Protocol level | Browser level | Dante circle name (by level) | Brief page description                                                      |
+| ---------------------------- | -------------: | ------------: | ---------------------------- | --------------------------------------------------------------------------- |
+| `whitespace-token`           |              1 |             1 | Limbo                        | Extract regex token hidden in heavy whitespace and submit trimmed value.    |
+| `sorting-single`             |              1 |             1 | Limbo                        | Sort integers by rule and submit with required delimiter.                   |
+| `sorting-multi`              |              2 |             2 | Lust                         | Sort numbers and fill ordered values across multiple inputs.                |
+| `radio-checkbox`             |              2 |             1 | Lust / Limbo                 | Select the correct option from randomized radio/checkbox controls.          |
+| `hidden-field-metadata`      |              4 |             3 | Greed / Gluttony             | Find target value among many fields using metadata marker logic.            |
+| `hidden-field-metadata-auto` |              3 |             2 | Gluttony / Lust              | Submit form containing hidden metadata-target field chosen by session rule. |
+| `auto-filled-js`             |              7 |             6 | Violence / Heresy            | Read JS-populated value after runtime computation and submit it.            |
+| `sse-delivered`              |              9 |             9 | Treachery                    | Receive required value from SSE stream and submit exactly.                  |
+| `ws-delivered`               |              9 |             9 | Treachery                    | Request and capture token over WebSocket before submission.                 |
+| `selector-variant-a`         |              7 |             6 | Violence / Heresy            | Locate value by rotating selector strategy (data key/aria/testid).          |
+| `selector-variant-b`         |              7 |             6 | Violence / Heresy            | Same selector challenge family with different render pattern/decoys.        |
+| `dom-shuffling`              |              7 |             7 | Violence                     | Identify target after DOM order and identifiers are shuffled.               |
+| `shadow-canvas`              |              9 |             9 | Treachery                    | Extract token from Shadow DOM/canvas-style render surface.                  |
+| `decoy-inputs`               |              7 |             7 | Violence                     | Choose valid input among layout/style decoys and submit value.              |
+| `timing-window`              |              4 |             4 | Greed                        | Submit within server-enforced timing window constraints.                    |
+| `token-assembly`             |              3 |             3 | Gluttony                     | Assemble token from split nodes/attributes using ordering hints.            |
+| `request-integrity`          |              9 |             9 | Treachery                    | Build integrity/HMAC value using session nonce + streamed secret.           |
+| `header-derived`             |              6 |             4 | Heresy / Greed               | Derive required answer from response header indicated by page hint.         |
+| `downloaded-file-plain`      |              4 |             4 | Greed                        | Download plain file, read token line, and submit token.                     |
+| `downloaded-file-encoded`    |              7 |             7 | Violence                     | Download encoded payload, decode correctly, and submit result token.        |
+| `create-upload-file`         |              9 |             9 | Treachery                    | Create local file per rule and upload for strict server verification.       |
+| `markdown-pdf-upload`        |              9 |             9 | Treachery                    | Convert disabled markdown to PDF and upload matching rendered content.      |
+| `api-table-guid`             |              4 |             3 | Greed / Gluttony             | Query API table, apply row-selection rule, submit target GUID.              |
+| `large-pool-selection`       |              3 |             2 | Gluttony / Lust              | Pick exact target items from larger randomized option pool.                 |
+| `word-order-position`        |              3 |             2 | Gluttony / Lust              | Sort sampled words by rule and submit required positional word.             |
+
+Realtime capability note:
+
+- SSE and WebSocket challenges are explicitly considered protocol-tool feasible (including JMeter),
+  with higher setup/analysis effort than browser automation in many cases.
+
+Protocol deep-analysis note:
+
+- JavaScript-generated token/value pages and DOM-reshuffle pages are considered protocol-tool feasible.
+- Typical approach: HTML/script extraction with Regex (or equivalent parser), then JSR223/JSR233-style
+  post-processing to compute/select the final value before submit.
+- Upload-generation flows are also protocol-tool feasible: Groovy/JSR223 can orchestrate shell/template
+  commands to build artifacts (for example, markdown template -> rendered file -> PDF) prior to multipart upload.
+- Canvas/Shadow extraction flows are protocol-tool feasible when response payload includes parsable script/data
+  segments that can be isolated and evaluated with Regex/parser + post-processing logic.
+- These pages are intentionally high effort in protocol mode and should be treated as advanced workflow tasks.
+
+## Proposed Next challenges (file I/O)
 
 These are approved candidate challenges for the next catalog expansion. They are
 designed to increase realism for scripting tools (Playwright/JMeter/curl + helper
@@ -153,6 +234,64 @@ scripts) by requiring download handling, decoding, local file operations, and up
       - Advanced (`advanced`): explicit case-sensitivity or locale collation rules,
         plus tie-breaker behavior for duplicate-equivalent values.
 
+22. **Disabled markdown-to-PDF upload**
+    - Challenge id (proposed): `markdown-pdf-upload`
+    - Flow: Page displays randomized markdown in a disabled `<textarea>` (read-only to the user).
+      User must extract markdown content, render/convert it into a PDF file, and upload the PDF.
+    - Suggested tool affinity: `either` (high-effort protocol + browser)
+    - Suggested difficulty tier: `advanced` to `grand-master`
+    - Suggested level placement: late session
+    - Validation:
+      - uploaded file must be present and valid PDF (`%PDF-` signature check)
+      - extract text from uploaded PDF server-side and normalize whitespace/newline differences
+      - compare normalized extracted text to normalized source markdown-rendered plain text target
+      - optional strict mode: enforce expected filename and/or minimum page count
+    - Normalization checklist (deterministic comparator):
+      - convert all line endings to `\n`
+      - trim leading/trailing whitespace per line
+      - collapse repeated internal spaces/tabs to single space
+      - collapse 3+ blank lines to max 1 blank line
+      - normalize unicode quotes/dashes to ASCII equivalents where extraction engines differ
+      - strip page headers/footers if they match configured renderer artifacts
+      - apply same normalization pipeline to both expected text and extracted PDF text before hashing
+    - Fairness constraints:
+      - keep markdown subset bounded (headings, lists, paragraphs, inline code)
+      - avoid ambiguous constructs (tables/footnotes/HTML blocks) unless parser rules are explicit
+      - publish normalization rules in-page (line endings, repeated spaces, trailing blank lines)
+    - Implementation notes:
+      - store canonical expected text hash in session state
+      - on upload: extract PDF text -> normalize -> hash -> compare with canonical hash
+      - support protocol-tool workflows where artifact creation is orchestrated by JSR223/Groovy + shell tools
+    - Tool feasibility note:
+      - Feasible with script-capable protocol/browser tools (for example JMeter, Locust, k6, Playwright).
+      - Likely not feasible in constrained record/replay-only tools without programmable file pipelines
+        (for example TruClient/RealBrowser-style environments).
+    - Reference comparator pseudo-code:
+
+      ```text
+      sourceMarkdown = getSessionMarkdown(sessionId, challengeId)
+      expectedText = renderMarkdownToPlainText(sourceMarkdown)
+
+      uploadedPdfBytes = readUpload(payload)
+      assert startsWith(uploadedPdfBytes, "%PDF-")
+
+      extractedText = extractPdfText(uploadedPdfBytes)
+
+      normalize(text):
+        text = text.replace("\r\n", "\n").replace("\r", "\n")
+        text = mapLines(text, trim)
+        text = collapseInternalWhitespace(text)      // spaces/tabs -> single space
+        text = collapseBlankRuns(text, maxBlank=1)
+        text = normalizeUnicodePunctuation(text)     // smart quotes/dashes -> ascii
+        text = stripConfiguredHeaderFooterArtifacts(text)
+        return text.trim()
+
+      expectedHash = sha256(normalize(expectedText))
+      uploadedHash = sha256(normalize(extractedText))
+
+      pass = (expectedHash == uploadedHash)
+      ```
+
 ### Tier and profile application guidance
 
 - `protocol` profile:
@@ -161,11 +300,13 @@ scripts) by requiring download handling, decoding, local file operations, and up
     without full browser automation.
   - Exclude 18 unless a multipart upload endpoint is explicitly documented and intended
     for protocol-tool workflows.
+  - Include 22 only when PDF text extraction/normalization rules are explicitly documented
+    and deterministic for protocol workflows.
 - `browser` profile:
-  - Include all three challenges.
+  - Include all four challenges.
   - Prefer JS-triggered download and upload interactions to test full browser scripts.
 - `mixed` profile:
-  - Include all three, but cap to one high-complexity file challenge per session to
+  - Include all four, but cap to one high-complexity file challenge per session to
     avoid over-weighting file I/O relative to other puzzle types.
   - Include 19 as a core medium bridge between DOM-only and file/realtime pages.
   - Include 20 and 21 as medium bridge challenges for deterministic parsing + selection.
@@ -201,25 +342,90 @@ scripts) by requiring download handling, decoding, local file operations, and up
 - One-time tokens should be single-use and expire.
 - Attempts should be logged with timestamps for analysis.
 
-## Theme & UI spec (to finalize)
+## Theme, branding, and white-label spec (updated)
 
-- Overall theme/mood: Cyberpunk + playful.
-- Color palette (primary/secondary/accent + backgrounds):
-  - Primary: Neon magenta (#FF2D95)
-  - Secondary: Electric cyan (#00F5FF)
-  - Accent: Acid lime (#B6FF3A)
-  - Background: Deep space navy (#0B0F1A)
-  - Surface: Dark slate (#141A2A)
-  - Text: Off-white (#E6EAF2)
-  - Danger: Neon red (#FF4D4D)
-- Typography (font families, sizes, weights):
-  - Headings: "Orbitron" (or similar sci-fi sans), 600–700 weights
-  - Body: "Inter" (or similar clean sans), 400–500 weights
-  - Code/mono: "JetBrains Mono" for tokens/values
-- Layout style: Consistent, card-based layout where applicable; allow sparse/empty pages when required by challenge logic.
-- Component styling: Cyberpunk playful accents (glow borders, subtle scanlines, pill buttons, high-contrast inputs).
-- Iconography/illustrations: Minimal neon line icons; avoid clutter on puzzle-heavy pages.
-- Motion/animation guidance: Subtle ambient animations (glow pulsing, scanline drift, slow parallax). On intentionally empty pages, include a light distracting animation.
+### Default product theme
+
+- Default visual identity: **Inferno-inspired**, with challenge intensity represented by tier levels `1` to `9`.
+- Tier naming follows Dante's 9 circles for light-hearted theme labeling.
+- Messaging intent: "difficulty as descent" (training pressure), while keeping content workplace-safe.
+
+### Tier model (replaces easy/medium/advanced in UI)
+
+- Every challenge page exposes a **presentation tier**: `tierScore` in range `1..9`.
+- Internal technical difficulty metadata may remain (`easy|medium|advanced|grand-master`) for filtering,
+  but UI and theming use `tierScore`.
+- Baseline mapping guidance:
+  - `easy` -> tiers `1-3`
+  - `medium` -> tiers `4-6`
+  - `advanced` -> tiers `7-8`
+  - `grand-master` -> tier `9`
+
+### Background and animation behavior
+
+- Each rendered challenge page background is selected by `activeTheme` + `tierScore`.
+- Inferno default background progression:
+  - Tier 1-3: low-contrast ash/smoke ambience.
+  - Tier 4-6: ember glow, occasional heat shimmer.
+  - Tier 7-8: stronger fire motion accents and brighter edge glows.
+  - Tier 9: highest intensity visuals with controlled motion.
+- Animation policy:
+  - Prefer lightweight CSS-first effects (gradient drift, glow pulse, particle flicker).
+  - Provide reduced-motion fallbacks via `prefers-reduced-motion`.
+  - Keep animation behind content and never obstruct instructions/inputs.
+
+### Client branding / white-label capability
+
+- The system must support **theme packs** to enable per-client branding without code rewrites.
+- Theme pack supports at minimum:
+  - `id`, `name`, `logo`, `watermark`, `color tokens`, `font tokens`, `tier backgrounds[1..9]`, `animation profile`.
+  - Optional client text overrides (title, warning copy, footer text).
+- Default theme pack is Inferno-inspired.
+- Clients can switch to neutral/corporate packs (no inferno/fire references) by config.
+- Branding scope includes: header logo, optional watermark, favicon, summary/report branding.
+
+### Theme selection at startup
+
+- Theme must be selectable at server start (runtime config), not hard-coded.
+- Proposed startup variable: `THEME_PACK`.
+  - `inferno` (default)
+  - `neutral` (enterprise-safe baseline)
+  - `<client-id>` (client-provided theme pack)
+- Optional companion variable: `THEME_WATERMARK=on|off` for branded training deployments.
+
+### Multi-tenant company branding model
+
+- The platform must support a **tenant/client mode** for internal company training programs.
+- Recommended startup variables:
+  - `TENANT_ID` (selects company profile)
+  - `THEME_PACK` (visual theme, defaults per tenant)
+  - `THEME_WATERMARK=on|off`
+  - `BRAND_LOGO_MODE=tenant|theme|none`
+- Theme/brand resolution precedence:
+  1. Tenant override (logo, watermark, display name, policy text)
+  2. Theme pack defaults
+  3. Product defaults (Inferno)
+- Per-tenant configuration should support:
+  - display name + training program label
+  - logo and optional watermark asset
+  - allowed themes list (for example inferno + neutral only)
+  - default profile/tier presets for staff cohorts
+  - legal/compliance footer text override
+- Branding must be render-only. Tenant branding cannot alter challenge generation, scoring,
+  session integrity, or answer validation behavior.
+
+### Dante Inferno as default training theme
+
+- Inferno remains the product default when no tenant/theme override is provided.
+- Tier backgrounds map directly to level `1..9` across all challenge pages.
+- Company deployments can keep inferno visuals, switch to neutral/corporate visuals,
+  or provide their own approved theme pack without changing challenge logic.
+
+### Safety and enterprise constraints
+
+- Visual themes must remain configurable for clients that disallow religious or punitive imagery.
+- Inferno theme is opt-out and not hard-coded into challenge logic.
+- Challenge behavior, validation, and scoring remain theme-agnostic.
 
 ## Routing & API contract (to finalize)
 
@@ -269,7 +475,7 @@ scripts) by requiring download handling, decoding, local file operations, and up
 
 ### Phase 5 — UX & theming
 
-- Deliverables: cyberpunk/playful theme, card-based layout, animations, accessibility pass.
+- Deliverables: Inferno-default theme, 1-9 tier backgrounds, white-label theme-pack support, animations, accessibility pass.
 
 ### Phase 6 — Testing & hardening
 
@@ -305,14 +511,17 @@ Status key: Not started / In progress / Done
 - Configurable difficulty levels (randomization ranges, timeouts, challenge mix).
 - Basic observability: request logs, session audit trail.
 - Accessible UI (keyboard navigation, readable instructions).
+- Theme system must support tenant/client-specific branding (logo, watermark, palette, backgrounds, motion profile).
+- Theming must not alter challenge correctness logic, validation rules, or route contracts.
 
-## Tool profiles and difficulty tiers
+## Tool profiles and tier presentation
 
 The challenge catalog can be tagged by tool affinity and difficulty, enabling curated
 session flows for different testing tools and skill levels.
 
 - Tool profiles: e.g., protocol-first (JMeter), browser-first (Playwright), mixed.
-- Difficulty tiers: easy, medium, advanced, grand master.
+- Internal difficulty tags: easy, medium, advanced, grand master.
+- UI presentation tiers: Inferno-style levels `1..9` mapped from internal difficulty.
 - Interview presets: fixed profile + tier ordering for consistent candidate screening.
 
 ---

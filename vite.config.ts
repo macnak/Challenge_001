@@ -7,4 +7,8 @@ export default defineConfig({
     outDir: 'dist/client',
     assetsDir: 'assets',
   },
+  test: {
+    include: ['src/**/*.test.ts'],
+    exclude: ['dist/**', '**/dist/**'],
+  },
 });

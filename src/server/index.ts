@@ -20,6 +20,13 @@ app.register(fastifyStatic, {
   prefix: '/assets/',
 });
 
+const publicPath = path.resolve(__dirname, '../../public');
+app.register(fastifyStatic, {
+  root: publicPath,
+  prefix: '/public/',
+  decorateReply: false,
+});
+
 app.register(fastifyCookie);
 app.register(fastifyFormbody);
 app.register(fastifyMultipart);

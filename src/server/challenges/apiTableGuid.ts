@@ -94,9 +94,19 @@ export const resolveApiTableRuleMode = (
 ): ApiTableRuleMode => {
   const envForcedMode = parseRuleMode(process.env.API_TABLE_RULE_MODE);
   const envSequence = parseRuleSequence(process.env.API_TABLE_RULE_SEQUENCE);
-  const forcedMode = options?.forcedMode ?? envForcedMode ?? runConfig.apiTableRuleMode;
-  const sequence =
-    options?.sequence ?? (envSequence.length > 0 ? envSequence : runConfig.apiTableRuleSequence);
+  const hasForcedModeOption = options !== undefined && 'forcedMode' in options;
+  const hasSequenceOption = options !== undefined && 'sequence' in options;
+
+  const forcedMode = hasForcedModeOption
+    ? (options.forcedMode ?? null)
+    : hasSequenceOption
+      ? null
+      : (envForcedMode ?? runConfig.apiTableRuleMode);
+  const sequence = hasSequenceOption
+    ? (options.sequence ?? [])
+    : envSequence.length > 0
+      ? envSequence
+      : runConfig.apiTableRuleSequence;
 
   if (forcedMode) {
     return forcedMode;

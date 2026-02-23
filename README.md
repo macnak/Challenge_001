@@ -37,8 +37,8 @@ docker run -p 3000:3000 --name challenge-001 macnak/challenge-001:latest
 Versioned release example:
 
 ```
-docker pull macnak/challenge-001:0.1.1
-docker run -p 3000:3000 --name challenge-001-0-1-1 macnak/challenge-001:0.1.1
+docker pull macnak/challenge-001:0.1.2
+docker run -p 3000:3000 --name challenge-001-0-1-2 macnak/challenge-001:0.1.2
 ```
 
 docker-compose:
