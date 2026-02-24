@@ -48,16 +48,61 @@ You can override run behavior using environment variables or the provided script
 
 ### Quick-start matrix
 
-| Goal                             | Command / mode                                                                                                                                                                   |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Local dev (default Inferno)      | `npm run dev:theme:inferno`                                                                                                                                                      |
-| Local dev (neutral)              | `npm run dev:theme:neutral`                                                                                                                                                      |
-| Local dev (tenant branded)       | `npm run dev:tenant:acme`                                                                                                                                                        |
-| Production run (Inferno)         | `npm run start:theme:inferno`                                                                                                                                                    |
-| Production run (neutral)         | `npm run start:theme:neutral`                                                                                                                                                    |
-| Production run (tenant branded)  | `npm run start:tenant:acme`                                                                                                                                                      |
-| Container run (Inferno + tenant) | `docker run -p 3000:3000 -e THEME_PACK=inferno -e TENANT_ID=acme-training -e THEME_WATERMARK=on -e BRAND_LOGO_MODE=tenant --name challenge-001-acme macnak/challenge-001:latest` |
-| Compose run (tenant profile)     | Use the `docker-compose` branded tenant example below                                                                                                                            |
+| Goal                             | Command / mode                                                                                                                                                          |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Local dev (guided mode)          | `npm run dev:mode:guided`                                                                                                                                               |
+| Local dev (assessment mode)      | `npm run dev:mode:assessment`                                                                                                                                           |
+| Local dev (insane mode)          | `npm run dev:mode:insane`                                                                                                                                               |
+| Local dev (default Inferno)      | `npm run dev:theme:inferno`                                                                                                                                             |
+| Local dev (neutral)              | `npm run dev:theme:neutral`                                                                                                                                             |
+| Local dev (tenant branded)       | `npm run dev:tenant:acme`                                                                                                                                               |
+| Production run (guided mode)     | `npm run start:mode:guided`                                                                                                                                             |
+| Production run (assessment mode) | `npm run start:mode:assessment`                                                                                                                                         |
+| Production run (insane mode)     | `npm run start:mode:insane`                                                                                                                                             |
+| Production run (Inferno)         | `npm run start:theme:inferno`                                                                                                                                           |
+| Production run (neutral)         | `npm run start:theme:neutral`                                                                                                                                           |
+| Production run (tenant branded)  | `npm run start:tenant:acme`                                                                                                                                             |
+| Container run (Inferno + tenant) | `docker run -p 3000:3000 -e THEME_PACK=inferno -e TENANT_ID=acme -e THEME_WATERMARK=on -e BRAND_LOGO_MODE=tenant --name challenge-001-acme macnak/challenge-001:latest` |
+| Compose run (tenant profile)     | Use the `docker-compose` branded tenant example below                                                                                                                   |
+
+### Mode presets
+
+- **Guided mode**: per-page result + explanation enabled (good for learning).
+- **Assessment mode**: no per-page result/explanation; final summary only.
+- **Insane mode**: no per-page result/explanation and full randomization unless you also force seed/order.
+
+Insane mode behavior aligns with the expansion plan intent: users only discover mistakes in end-of-run review (if they choose reveal).
+
+### Example (Docker, guided mode)
+
+```bash
+docker run -p 3000:3000 \
+  -e ACCESS_METHOD=basic \
+  -e FIXED_ORDER=1 \
+  -e SHOW_PER_PAGE_RESULTS=1 \
+  -e SHOW_PER_PAGE_EXPLANATION=1 \
+  --name challenge-001-guided macnak/challenge-001:latest
+```
+
+### Example (Docker, assessment mode)
+
+```bash
+docker run -p 3000:3000 \
+  -e ACCESS_METHOD=basic \
+  -e SHOW_PER_PAGE_RESULTS=0 \
+  -e SHOW_PER_PAGE_EXPLANATION=0 \
+  --name challenge-001-assessment macnak/challenge-001:latest
+```
+
+### Example (Docker, insane mode)
+
+```bash
+docker run -p 3000:3000 \
+  -e SHOW_PER_PAGE_RESULTS=0 \
+  -e SHOW_PER_PAGE_EXPLANATION=0 \
+  -e BLOCK_CONTINUE_ON_FAILURE=0 \
+  --name challenge-001-insane macnak/challenge-001:latest
+```
 
 ### Environment variables
 
@@ -99,6 +144,25 @@ Use them for internal staff training deployments where company branding is requi
 - `BRAND_LOGO_MODE`: Selects logo source precedence.
   - Allowed values: `tenant`, `theme`, `none`
 
+### Branding asset placement
+
+Static branding assets are loaded from `public/` at runtime.
+
+- Tenant mode (`BRAND_LOGO_MODE=tenant`): place files in `public/branding/<tenant-id>/`
+- Theme mode (`BRAND_LOGO_MODE=theme`): place files in `public/themes/<theme-pack>/`
+
+Supported files:
+
+- Logo image: `logo.svg`, `logo.png`, or `logo.webp`
+- Optional watermark image: `watermark.svg`, `watermark.png`, or `watermark.webp`
+
+Example (included in repository):
+
+- `public/branding/acme/logo.svg`
+- `public/branding/acme/watermark.svg`
+- `public/themes/inferno/logo.svg`
+- `public/themes/inferno/watermark.svg`
+
 Note: These flags align to the updated branding spec in `requirements/000_overview.md`.
 If a deployment has not yet implemented tenant/theme-pack loading, unknown values should
 fall back to safe defaults (`inferno`, watermark off, no tenant override).
@@ -121,10 +185,20 @@ docker run -p 3000:3000 \
 ```
 docker run -p 3000:3000 \
   -e THEME_PACK=inferno \
-  -e TENANT_ID=acme-training \
+  -e TENANT_ID=acme \
   -e THEME_WATERMARK=on \
   -e BRAND_LOGO_MODE=tenant \
   --name challenge-001-acme macnak/challenge-001:latest
+```
+
+### Example (Docker, Inferno theme-mode branding)
+
+```bash
+docker run -p 3000:3000 \
+  -e THEME_PACK=inferno \
+  -e BRAND_LOGO_MODE=theme \
+  -e THEME_WATERMARK=on \
+  --name challenge-001-inferno-theme macnak/challenge-001:latest
 ```
 
 ### Example (docker-compose)
@@ -153,7 +227,7 @@ services:
       - "3000:3000"
     environment:
       THEME_PACK: inferno
-      TENANT_ID: acme-training
+      TENANT_ID: acme
       THEME_WATERMARK: "on"
       BRAND_LOGO_MODE: tenant
       TOOL_PROFILE: mixed
@@ -195,14 +269,22 @@ docker compose up
 - `npm run dev:interview:browser-medium`
 - `npm run dev:seed:fixed`
 - `npm run dev:theme:inferno`
+- `npm run dev:theme:inferno:branded`
 - `npm run dev:theme:neutral`
 - `npm run dev:tenant:acme`
+- `npm run dev:mode:guided`
+- `npm run dev:mode:assessment`
+- `npm run dev:mode:insane`
 
 Production start variants:
 
 - `npm run start:theme:inferno`
+- `npm run start:theme:inferno:branded`
 - `npm run start:theme:neutral`
 - `npm run start:tenant:acme`
+- `npm run start:mode:guided`
+- `npm run start:mode:assessment`
+- `npm run start:mode:insane`
 - `npm run start:level:1`
 - `npm run start:level:2`
 - `npm run start:level:3`

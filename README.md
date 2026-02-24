@@ -47,6 +47,37 @@ docker-compose:
 docker compose up
 ```
 
+Branding example (ACME + Inferno):
+
+```
+docker run -p 3000:3000 \
+  -e THEME_PACK=inferno \
+  -e TENANT_ID=acme \
+  -e BRAND_LOGO_MODE=tenant \
+  -e THEME_WATERMARK=on \
+  --name challenge-001-acme macnak/challenge-001:latest
+```
+
+Place tenant brand assets in:
+
+- `public/branding/<tenant-id>/logo.svg` (or `.png` / `.webp`)
+- `public/branding/<tenant-id>/watermark.svg` (or `.png` / `.webp`)
+
+Theme-mode branding example (no tenant override):
+
+```bash
+docker run -p 3000:3000 \
+  -e THEME_PACK=inferno \
+  -e BRAND_LOGO_MODE=theme \
+  -e THEME_WATERMARK=on \
+  --name challenge-001-inferno-theme macnak/challenge-001:latest
+```
+
+Place theme assets in:
+
+- `public/themes/<theme-pack>/logo.svg` (or `.png` / `.webp`)
+- `public/themes/<theme-pack>/watermark.svg` (or `.png` / `.webp`)
+
 See [requirements/002_usage.md](requirements/002_usage.md) for run modes and [requirements/003_docker_hub.md](requirements/003_docker_hub.md) for Docker Hub listing content.
 
 ## Realtime (SSE)

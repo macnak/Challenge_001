@@ -1,4 +1,6 @@
 import { runConfig } from './config.js';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 
 type RenderOptions = {
   title: string;
@@ -22,6 +24,25 @@ const toTitleCase = (value: string) => {
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
+};
+
+const toAssetSegment = (value: string | null | undefined) => {
+  if (!value) {
+    return null;
+  }
+
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-_]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return normalized || null;
+};
+
+const publicAssetExists = (relativePath: string) => {
+  const assetPath = join(process.cwd(), 'public', ...relativePath.split('/'));
+  return existsSync(assetPath);
 };
 
 const clampTier = (value: number | undefined) => {
@@ -73,13 +94,57 @@ const resolveBrandLabel = () => {
   return `Challenge 001 · ${themeLabel}`;
 };
 
-const resolveWatermark = () => {
+const resolveBrandAssetBasePath = () => {
+  const tenantSegment = toAssetSegment(runConfig.tenantId);
+  const themeSegment = toAssetSegment(runConfig.themePack);
+
+  if (runConfig.brandLogoMode === 'tenant' && tenantSegment) {
+    return `branding/${tenantSegment}`;
+  }
+
+  if (runConfig.brandLogoMode === 'theme' && themeSegment) {
+    return `themes/${themeSegment}`;
+  }
+
+  return null;
+};
+
+const resolveAssetSource = (basePath: string | null, fileCandidates: string[]) => {
+  if (!basePath) {
+    return '';
+  }
+
+  for (const candidate of fileCandidates) {
+    const relativePath = `${basePath}/${candidate}`;
+    if (publicAssetExists(relativePath)) {
+      return `/public/${relativePath}`;
+    }
+  }
+
+  return '';
+};
+
+const resolveBrandLogoSource = () => {
+  const basePath = resolveBrandAssetBasePath();
+  return resolveAssetSource(basePath, ['logo.svg', 'logo.png', 'logo.webp']);
+};
+
+const resolveWatermarkLabel = () => {
   if (!runConfig.themeWatermark) {
     return '';
   }
 
   const tenant = runConfig.tenantId ? toTitleCase(runConfig.tenantId) : 'Challenge 001';
   return `${tenant} · Internal Training`;
+};
+
+const resolveWatermarkSource = () => {
+  if (!runConfig.themeWatermark) {
+    return '';
+  }
+
+  const basePath = resolveBrandAssetBasePath();
+  return resolveAssetSource(basePath, ['watermark.svg', 'watermark.png', 'watermark.webp']);
 };
 
 export const renderPage = ({ title, body, tierScore, minimalEffects }: RenderOptions) => {
@@ -93,7 +158,9 @@ export const renderPage = ({ title, body, tierScore, minimalEffects }: RenderOpt
   const hazeOpacity = isInferno ? 0.04 + tier * 0.025 : 0.015;
   const motionScale = isInferno ? 0.8 + tier * 0.1 : 0.35;
   const brandLabel = resolveBrandLabel();
-  const watermarkLabel = resolveWatermark();
+  const brandLogoSource = resolveBrandLogoSource();
+  const watermarkLabel = resolveWatermarkLabel();
+  const watermarkSource = resolveWatermarkSource();
 
   return `<!doctype html>
 <html lang="en">
@@ -250,6 +317,18 @@ export const renderPage = ({ title, body, tierScore, minimalEffects }: RenderOpt
         background: rgba(0, 0, 0, 0.18);
         font-size: 0.84rem;
         letter-spacing: 0.3px;
+      }
+
+      .brand-logo {
+        display: block;
+        height: 20px;
+        width: auto;
+        max-width: 150px;
+        object-fit: contain;
+      }
+
+      .brand-text {
+        line-height: 1;
       }
 
       .tier-pill {
@@ -753,6 +832,27 @@ export const renderPage = ({ title, body, tierScore, minimalEffects }: RenderOpt
         user-select: none;
       }
 
+      .watermark-image-wrap {
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .watermark-logo {
+        display: block;
+        height: 30px;
+        width: auto;
+        max-width: 180px;
+        object-fit: contain;
+      }
+
+      .watermark-fallback {
+        display: inline;
+      }
+
+      .watermark-logo + .watermark-fallback {
+        display: none;
+      }
+
       @keyframes float {
         0% { transform: translate(0, 0); }
         50% { transform: translate(-12px, 8px); }
@@ -849,13 +949,21 @@ export const renderPage = ({ title, body, tierScore, minimalEffects }: RenderOpt
       <div class="card">
         ${minimalEffects ? '' : '<div class="scanline"></div>'}
         <div class="topbar">
-          ${brandLabel ? `<div class="brand-chip">${escapeHtml(brandLabel)}</div>` : '<div></div>'}
+          ${
+            brandLabel || brandLogoSource
+              ? `<div class="brand-chip">${brandLogoSource ? `<img class="brand-logo" src="${escapeHtml(brandLogoSource)}" alt="Brand logo" loading="lazy" decoding="async" onerror="this.style.display='none'" />` : ''}${brandLabel ? `<span class="brand-text">${escapeHtml(brandLabel)}</span>` : ''}</div>`
+              : '<div></div>'
+          }
           <div class="tier-pill">Level ${tier} / 9</div>
         </div>
         ${body}
       </div>
     </div>
-    ${watermarkLabel ? `<div class="watermark">${escapeHtml(watermarkLabel)}</div>` : ''}
+    ${
+      watermarkLabel || watermarkSource
+        ? `<div class="watermark${watermarkSource ? ' watermark-image-wrap' : ''}">${watermarkSource ? `<img class="watermark-logo" src="${escapeHtml(watermarkSource)}" alt="Brand watermark" loading="lazy" decoding="async" onerror="this.remove()" />` : ''}${watermarkLabel ? `<span class="watermark-fallback">${escapeHtml(watermarkLabel)}</span>` : ''}</div>`
+        : ''
+    }
   </body>
 </html>`;
 };

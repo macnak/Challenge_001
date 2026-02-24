@@ -58,10 +58,11 @@ Build an Automation / Performance Challenge web application designed to be diffi
 ## Backlog / future variants
 
 - Optional SPA-only mode (API-driven) as an alternative mode.
+- Level 1-4 auth/correlation expansion plan documented in `requirements/004_level1_4_expansion_plan.md`.
 
 ## Current implemented challenge catalog snapshot (v0.1.1)
 
-The currently implemented runtime catalog contains 25 challenge pages. This section is
+The currently implemented runtime catalog contains 56 challenge pages. This section is
 the source-of-truth snapshot for planning theme-tier coverage and client training packs.
 
 1. `whitespace-token`
@@ -89,6 +90,37 @@ the source-of-truth snapshot for planning theme-tier coverage and client trainin
 23. `large-pool-selection`
 24. `word-order-position`
 25. `markdown-pdf-upload`
+26. `fixed-form-basic-fields`
+27. `fixed-form-select-radio`
+28. `redirect-token-pickup-basic`
+29. `page-timeout-idle`
+30. `redirect-token-branching`
+31. `tabbed-form-progressive`
+32. `tabbed-form-conditional`
+33. `pagination-sequential-pick`
+34. `pagination-filter-then-pick`
+35. `menu-click-basic`
+36. `menu-hover-delay`
+37. `menu-submenu-path`
+38. `menu-theme-variant`
+39. `fiori-table-id-pattern`
+40. `fiori-table-compound-selector`
+41. `page-timeout-step-window`
+42. `saml-redirect-lite`
+43. `saml-post-lite`
+44. `stepup-mfa-sequence`
+45. `one-page-auth-wizard`
+46. `fixed-form-visual-controls`
+47. `fixed-form-date-multi`
+48. `auth-cookie-boot`
+49. `redirect-state-hop`
+50. `csrf-double-submit`
+51. `nonce-login-window`
+52. `auth-header-switch`
+53. `jwt-lite-claims`
+54. `oauth-pkce-mini`
+55. `refresh-rotation`
+56. `form-pre-submit-encoding`
 
 ## Challenge level matrix (1-9) by approach
 
@@ -96,33 +128,64 @@ Use this matrix as the default tier assignment reference for session builders.
 Values are presentation levels (`1` easiest, `9` hardest). `N/A` means the challenge
 is not part of the default profile mix for that approach (but may still be technically possible).
 
-| Challenge page               | Protocol level | Browser level | Dante circle name (by level) | Brief page description                                                      |
-| ---------------------------- | -------------: | ------------: | ---------------------------- | --------------------------------------------------------------------------- |
-| `whitespace-token`           |              1 |             1 | Limbo                        | Extract regex token hidden in heavy whitespace and submit trimmed value.    |
-| `sorting-single`             |              1 |             1 | Limbo                        | Sort integers by rule and submit with required delimiter.                   |
-| `sorting-multi`              |              2 |             2 | Lust                         | Sort numbers and fill ordered values across multiple inputs.                |
-| `radio-checkbox`             |              2 |             1 | Lust / Limbo                 | Select the correct option from randomized radio/checkbox controls.          |
-| `hidden-field-metadata`      |              4 |             3 | Greed / Gluttony             | Find target value among many fields using metadata marker logic.            |
-| `hidden-field-metadata-auto` |              3 |             2 | Gluttony / Lust              | Submit form containing hidden metadata-target field chosen by session rule. |
-| `auto-filled-js`             |              7 |             6 | Violence / Heresy            | Read JS-populated value after runtime computation and submit it.            |
-| `sse-delivered`              |              9 |             9 | Treachery                    | Receive required value from SSE stream and submit exactly.                  |
-| `ws-delivered`               |              9 |             9 | Treachery                    | Request and capture token over WebSocket before submission.                 |
-| `selector-variant-a`         |              7 |             6 | Violence / Heresy            | Locate value by rotating selector strategy (data key/aria/testid).          |
-| `selector-variant-b`         |              7 |             6 | Violence / Heresy            | Same selector challenge family with different render pattern/decoys.        |
-| `dom-shuffling`              |              7 |             7 | Violence                     | Identify target after DOM order and identifiers are shuffled.               |
-| `shadow-canvas`              |              9 |             9 | Treachery                    | Extract token from Shadow DOM/canvas-style render surface.                  |
-| `decoy-inputs`               |              7 |             7 | Violence                     | Choose valid input among layout/style decoys and submit value.              |
-| `timing-window`              |              4 |             4 | Greed                        | Submit within server-enforced timing window constraints.                    |
-| `token-assembly`             |              3 |             3 | Gluttony                     | Assemble token from split nodes/attributes using ordering hints.            |
-| `request-integrity`          |              9 |             9 | Treachery                    | Build integrity/HMAC value using session nonce + streamed secret.           |
-| `header-derived`             |              6 |             4 | Heresy / Greed               | Derive required answer from response header indicated by page hint.         |
-| `downloaded-file-plain`      |              4 |             4 | Greed                        | Download plain file, read token line, and submit token.                     |
-| `downloaded-file-encoded`    |              7 |             7 | Violence                     | Download encoded payload, decode correctly, and submit result token.        |
-| `create-upload-file`         |              9 |             9 | Treachery                    | Create local file per rule and upload for strict server verification.       |
-| `markdown-pdf-upload`        |              9 |             9 | Treachery                    | Convert disabled markdown to PDF and upload matching rendered content.      |
-| `api-table-guid`             |              4 |             3 | Greed / Gluttony             | Query API table, apply row-selection rule, submit target GUID.              |
-| `large-pool-selection`       |              3 |             2 | Gluttony / Lust              | Pick exact target items from larger randomized option pool.                 |
-| `word-order-position`        |              3 |             2 | Gluttony / Lust              | Sort sampled words by rule and submit required positional word.             |
+| Challenge page                  | Protocol level | Browser level | Dante circle name (by level) | Brief page description                                                      |
+| ------------------------------- | -------------: | ------------: | ---------------------------- | --------------------------------------------------------------------------- |
+| `whitespace-token`              |              1 |             1 | Limbo                        | Extract regex token hidden in heavy whitespace and submit trimmed value.    |
+| `sorting-single`                |              1 |             1 | Limbo                        | Sort integers by rule and submit with required delimiter.                   |
+| `sorting-multi`                 |              2 |             2 | Lust                         | Sort numbers and fill ordered values across multiple inputs.                |
+| `radio-checkbox`                |              2 |             1 | Lust / Limbo                 | Select the correct option from randomized radio/checkbox controls.          |
+| `hidden-field-metadata`         |              4 |             3 | Greed / Gluttony             | Find target value among many fields using metadata marker logic.            |
+| `hidden-field-metadata-auto`    |              3 |             2 | Gluttony / Lust              | Submit form containing hidden metadata-target field chosen by session rule. |
+| `auto-filled-js`                |              7 |             6 | Violence / Heresy            | Read JS-populated value after runtime computation and submit it.            |
+| `sse-delivered`                 |              9 |             9 | Treachery                    | Receive required value from SSE stream and submit exactly.                  |
+| `ws-delivered`                  |              9 |             9 | Treachery                    | Request and capture token over WebSocket before submission.                 |
+| `selector-variant-a`            |              7 |             6 | Violence / Heresy            | Locate value by rotating selector strategy (data key/aria/testid).          |
+| `selector-variant-b`            |              7 |             6 | Violence / Heresy            | Same selector challenge family with different render pattern/decoys.        |
+| `dom-shuffling`                 |              7 |             7 | Violence                     | Identify target after DOM order and identifiers are shuffled.               |
+| `shadow-canvas`                 |              9 |             9 | Treachery                    | Extract token from Shadow DOM/canvas-style render surface.                  |
+| `decoy-inputs`                  |              7 |             7 | Violence                     | Choose valid input among layout/style decoys and submit value.              |
+| `timing-window`                 |              4 |             4 | Greed                        | Submit within server-enforced timing window constraints.                    |
+| `token-assembly`                |              3 |             3 | Gluttony                     | Assemble token from split nodes/attributes using ordering hints.            |
+| `request-integrity`             |              9 |             9 | Treachery                    | Build integrity/HMAC value using session nonce + streamed secret.           |
+| `header-derived`                |              6 |             4 | Heresy / Greed               | Derive required answer from response header indicated by page hint.         |
+| `downloaded-file-plain`         |              4 |             4 | Greed                        | Download plain file, read token line, and submit token.                     |
+| `downloaded-file-encoded`       |              7 |             7 | Violence                     | Download encoded payload, decode correctly, and submit result token.        |
+| `create-upload-file`            |              9 |             9 | Treachery                    | Create local file per rule and upload for strict server verification.       |
+| `markdown-pdf-upload`           |              9 |             9 | Treachery                    | Convert disabled markdown to PDF and upload matching rendered content.      |
+| `api-table-guid`                |              4 |             3 | Greed / Gluttony             | Query API table, apply row-selection rule, submit target GUID.              |
+| `large-pool-selection`          |              3 |             2 | Gluttony / Lust              | Pick exact target items from larger randomized option pool.                 |
+| `word-order-position`           |              3 |             2 | Gluttony / Lust              | Sort sampled words by rule and submit required positional word.             |
+| `fixed-form-basic-fields`       |              1 |             1 | Limbo                        | Fill stable text/email/number fields from top-of-page values.               |
+| `fixed-form-select-radio`       |              2 |             2 | Lust                         | Complete fixed form with select/radio value-label mapping rules.            |
+| `redirect-token-pickup-basic`   |              1 |             1 | Limbo                        | Follow redirect pickup flow and submit captured token exactly.              |
+| `page-timeout-idle`             |              2 |             2 | Lust                         | Submit required values before idle timeout state expires.                   |
+| `redirect-token-branching`      |              2 |             2 | Lust                         | Follow instructed branch flow and submit branch-bound token.                |
+| `tabbed-form-progressive`       |              2 |             2 | Lust                         | Traverse tabs and submit required progressive form values.                  |
+| `tabbed-form-conditional`       |              4 |             4 | Greed                        | Complete tabbed flow with conditional required-field promotion.             |
+| `pagination-sequential-pick`    |              2 |             2 | Lust                         | Traverse paginated results and submit required ordered picks.               |
+| `pagination-filter-then-pick`   |              3 |             3 | Gluttony                     | Apply filter/sort, traverse pages, then submit filtered target.             |
+| `menu-click-basic`              |              1 |             1 | Limbo                        | Open click menu and choose exact instructed item.                           |
+| `menu-hover-delay`              |              2 |             2 | Lust                         | Use hover-triggered menu behavior with delay and auto-close rules.          |
+| `menu-submenu-path`             |              3 |             3 | Gluttony                     | Select required hierarchical menu > submenu > item path.                    |
+| `menu-theme-variant`            |              4 |             4 | Greed                        | Complete menu selection across rotating themed selector variants.           |
+| `fiori-table-id-pattern`        |              3 |             3 | Gluttony                     | Extract target row by deterministic Fiori-style ID pattern rule.            |
+| `fiori-table-compound-selector` |              4 |             4 | Greed                        | Resolve target table cell using compound selector and rule matching.        |
+| `page-timeout-step-window`      |              4 |             4 | Greed                        | Submit chained step payload within enforced per-step time windows.          |
+| `saml-redirect-lite`            |              4 |             3 | Greed / Gluttony             | Decode redirect SAMLRequest and preserve RelayState/InResponseTo values.    |
+| `saml-post-lite`                |              4 |             3 | Greed / Gluttony             | Parse SAMLResponse payload and submit NameID/Audience/Recipient fields.     |
+| `stepup-mfa-sequence`           |              4 |             4 | Greed                        | Complete password + OTP sequence with transaction-id correlation.           |
+| `one-page-auth-wizard`          |              4 |             4 | Greed                        | Execute one-page 3-step auth state machine with strict token chaining.      |
+| `fixed-form-visual-controls`    |              4 |             4 | Greed                        | Complete fixed form with slider/toggle/combobox-like control states.        |
+| `fixed-form-date-multi`         |              3 |             3 | Gluttony                     | Fill fixed form date/textarea/multi-select inputs with normalization rules. |
+| `auth-cookie-boot`              |              1 |             1 | Limbo                        | Submit matching auth cookie bootstrap and form token values.                |
+| `redirect-state-hop`            |              1 |             1 | Limbo                        | Follow redirect state chain and submit hop-trail correlation values.        |
+| `csrf-double-submit`            |              2 |             2 | Lust                         | Submit matching CSRF cookie/body token values with request nonce.           |
+| `nonce-login-window`            |              2 |             2 | Lust                         | Submit login payload before nonce window expiry.                            |
+| `auth-header-switch`            |              2 |             2 | Lust                         | Submit dynamic auth header name/value chosen by per-session rule.           |
+| `jwt-lite-claims`               |              3 |             2 | Gluttony / Lust              | Decode unsigned JWT-lite payload and submit required claim value.           |
+| `oauth-pkce-mini`               |              3 |             3 | Gluttony                     | Simulate PKCE code exchange with state/verifier/challenge correlation.      |
+| `refresh-rotation`              |              3 |             3 | Gluttony                     | Execute two-step refresh flow where second call uses rotated token.         |
+| `form-pre-submit-encoding`      |              4 |             3 | Greed / Gluttony             | Submit hidden payload computed from required inputs by pre-submit encoding. |
 
 Realtime capability note:
 
@@ -140,14 +203,14 @@ Protocol deep-analysis note:
   segments that can be isolated and evaluated with Regex/parser + post-processing logic.
 - These pages are intentionally high effort in protocol mode and should be treated as advanced workflow tasks.
 
-## Proposed Next challenges (file I/O)
+## File I/O challenge expansion history (implemented)
 
-These are approved candidate challenges for the next catalog expansion. They are
-designed to increase realism for scripting tools (Playwright/JMeter/curl + helper
-scripts) by requiring download handling, decoding, local file operations, and upload.
+These challenge designs are implemented in the current catalog and are kept here as
+reference guidance for scripting realism (Playwright/JMeter/curl + helper scripts)
+covering download handling, decoding, local file operations, and upload.
 
 16. **Downloaded file token (plain)**
-    - Challenge id (proposed): `downloaded-file-plain`
+    - Challenge id: `downloaded-file-plain`
     - Flow: On page load, server triggers a file download containing a random token/text.
       User must read file contents and submit the exact required value in a text input.
     - Suggested tool affinity: `either`
@@ -158,7 +221,7 @@ scripts) by requiring download handling, decoding, local file operations, and up
       - optional strict mode: require file name match when included in instructions
 
 17. **Downloaded file token (encoded/compressed)**
-    - Challenge id (proposed): `downloaded-file-encoded`
+    - Challenge id: `downloaded-file-encoded`
     - Flow: On page load, server downloads a file that is encoded/compressed
       (e.g., Base64, gzip, zip). User must decode/unpack correctly, extract random
       token, and submit it.
@@ -171,7 +234,7 @@ scripts) by requiring download handling, decoding, local file operations, and up
       - include deterministic metadata (header or on-page hint) to keep challenge fair
 
 18. **Create-and-upload file**
-    - Challenge id (proposed): `create-upload-file`
+    - Challenge id: `create-upload-file`
     - Flow: Page displays random required content (and optional encoding rule). User
       script must create a local file with exact expected content/format and upload it.
       Server verifies uploaded content.
@@ -184,7 +247,7 @@ scripts) by requiring download handling, decoding, local file operations, and up
       - optional strict checks: expected filename, extension, checksum, MIME type
 
 19. **API table row GUID selection**
-    - Challenge id (proposed): `api-table-guid`
+    - Challenge id: `api-table-guid`
     - Flow: Page loads table data from a challenge API call returning JSON with
       `target` selection details and randomized `products[]` rows (5–20 rows,
       ~6 columns). User must identify the target row and submit its GUID.
@@ -201,7 +264,7 @@ scripts) by requiring download handling, decoding, local file operations, and up
       - Advanced (`advanced`): highest rating where price is under a stated cap.
 
 20. **Large-pool item selection (checkbox/radio)**
-    - Challenge id (proposed): `large-pool-selection`
+    - Challenge id: `large-pool-selection`
     - Flow: Display 5–20 options sampled from a large canonical pool (~200 items).
       Prompt instructs user to select one or more specific target items (checkbox)
       or a single target (radio), then submit.
@@ -218,7 +281,7 @@ scripts) by requiring download handling, decoding, local file operations, and up
         strict count requirement (e.g., “select exactly 3”).
 
 21. **Large-pool word ordering + positional extraction**
-    - Challenge id (proposed): `word-order-position`
+    - Challenge id: `word-order-position`
     - Flow: Show 10–20 random words sampled from a large canonical pool (~200 words).
       Instruction provides sort direction (ascending/descending) and positional rule
       (e.g., 3rd from top / 4th from bottom). User submits the selected word.
@@ -235,7 +298,7 @@ scripts) by requiring download handling, decoding, local file operations, and up
         plus tie-breaker behavior for duplicate-equivalent values.
 
 22. **Disabled markdown-to-PDF upload**
-    - Challenge id (proposed): `markdown-pdf-upload`
+    - Challenge id: `markdown-pdf-upload`
     - Flow: Page displays randomized markdown in a disabled `<textarea>` (read-only to the user).
       User must extract markdown content, render/convert it into a PDF file, and upload the PDF.
     - Suggested tool affinity: `either` (high-effort protocol + browser)

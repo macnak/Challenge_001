@@ -19,6 +19,7 @@ import {
 import { createSeededRng, shuffle } from './challenges/utils.js';
 import { runConfig } from './config.js';
 import { buildApiTablePayload } from './challenges/apiTableGuid.js';
+import { refreshPageTimeoutIdle } from './challenges/pageTimeoutIdle.js';
 
 const SESSION_COOKIE = 'challenge_session';
 
@@ -247,7 +248,7 @@ export const registerRoutes = (app: FastifyInstance) => {
     const runtime = runtimeId
       ? getChallengeRuntimeById(runtimeId)
       : getChallengeRuntimeById('whitespace-token');
-    const context = buildChallengeContext(session, pageIndex, runtime.id);
+    const context = buildChallengeContext(session, pageIndex, runtime.id, tabToken);
     const state = getOrCreateState(context, runtime);
     const challengeMarkup = runtime.render(context, state.data);
 
@@ -276,6 +277,275 @@ export const registerRoutes = (app: FastifyInstance) => {
     });
 
     reply.type('text/html').send(html);
+  });
+
+  app.get('/m/:method/challenge/:index/redirect-token/start', async (request, reply) => {
+    const sessionId = request.cookies[SESSION_COOKIE];
+    const session = getSession(sessionId);
+    const { method, index } = request.params as { method: string; index: string };
+    const tabToken =
+      request.query && typeof request.query === 'object'
+        ? (request.query as { t?: string }).t
+        : undefined;
+
+    if (!session || !validateTabToken(session, tabToken)) {
+      reply.redirect('/start');
+      return;
+    }
+
+    if (method !== session.accessMethod) {
+      reply.redirect(`/m/${session.accessMethod}/challenge/${index}?t=${tabToken}`);
+      return;
+    }
+
+    const pageIndex = Number(index);
+    if (Number.isNaN(pageIndex) || pageIndex < 1 || pageIndex > session.pageCount) {
+      reply.redirect(`/m/${session.accessMethod}/summary?t=${tabToken}`);
+      return;
+    }
+
+    const runtimeId = session.pageOrder[pageIndex - 1];
+    const runtime = runtimeId
+      ? getChallengeRuntimeById(runtimeId)
+      : getChallengeRuntimeById('whitespace-token');
+
+    if (runtime.id !== 'redirect-token-pickup-basic') {
+      reply.redirect(`/m/${session.accessMethod}/challenge/${pageIndex}?t=${tabToken}`);
+      return;
+    }
+
+    const context = buildChallengeContext(session, pageIndex, runtime.id, tabToken);
+    const state = getOrCreateState(context, runtime);
+    const hopToken = typeof state.data.hopToken === 'string' ? state.data.hopToken : '';
+
+    reply.redirect(
+      `/m/${session.accessMethod}/challenge/${pageIndex}/redirect-token/hop?t=${tabToken}&k=${hopToken}`,
+    );
+  });
+
+  app.get('/m/:method/challenge/:index/redirect-token/hop', async (request, reply) => {
+    const sessionId = request.cookies[SESSION_COOKIE];
+    const session = getSession(sessionId);
+    const { method, index } = request.params as { method: string; index: string };
+    const query =
+      request.query && typeof request.query === 'object'
+        ? (request.query as { t?: string; k?: string })
+        : {};
+    const tabToken = query.t;
+    const providedHopToken = query.k;
+
+    if (!session || !validateTabToken(session, tabToken)) {
+      reply.redirect('/start');
+      return;
+    }
+
+    if (method !== session.accessMethod) {
+      reply.redirect(`/m/${session.accessMethod}/challenge/${index}?t=${tabToken}`);
+      return;
+    }
+
+    const pageIndex = Number(index);
+    if (Number.isNaN(pageIndex) || pageIndex < 1 || pageIndex > session.pageCount) {
+      reply.redirect(`/m/${session.accessMethod}/summary?t=${tabToken}`);
+      return;
+    }
+
+    const runtimeId = session.pageOrder[pageIndex - 1];
+    const runtime = runtimeId
+      ? getChallengeRuntimeById(runtimeId)
+      : getChallengeRuntimeById('whitespace-token');
+
+    if (runtime.id !== 'redirect-token-pickup-basic') {
+      reply.redirect(`/m/${session.accessMethod}/challenge/${pageIndex}?t=${tabToken}`);
+      return;
+    }
+
+    const context = buildChallengeContext(session, pageIndex, runtime.id, tabToken);
+    const state = getOrCreateState(context, runtime);
+    const expectedHopToken = typeof state.data.hopToken === 'string' ? state.data.hopToken : '';
+    const token = typeof state.data.token === 'string' ? state.data.token : '';
+
+    if (!providedHopToken || providedHopToken !== expectedHopToken) {
+      reply.redirect(`/m/${session.accessMethod}/challenge/${pageIndex}?t=${tabToken}`);
+      return;
+    }
+
+    state.data.pickupConfirmed = true;
+
+    reply.redirect(
+      `/m/${session.accessMethod}/challenge/${pageIndex}?t=${tabToken}&picked=1&rt=${encodeURIComponent(token)}`,
+    );
+  });
+
+  app.get('/m/:method/challenge/:index/redirect-branch/start', async (request, reply) => {
+    const sessionId = request.cookies[SESSION_COOKIE];
+    const session = getSession(sessionId);
+    const { method, index } = request.params as { method: string; index: string };
+    const query =
+      request.query && typeof request.query === 'object'
+        ? (request.query as { t?: string; b?: string })
+        : {};
+    const tabToken = query.t;
+    const branch = query.b;
+
+    if (!session || !validateTabToken(session, tabToken)) {
+      reply.redirect('/start');
+      return;
+    }
+
+    if (method !== session.accessMethod) {
+      reply.redirect(`/m/${session.accessMethod}/challenge/${index}?t=${tabToken}`);
+      return;
+    }
+
+    const pageIndex = Number(index);
+    if (Number.isNaN(pageIndex) || pageIndex < 1 || pageIndex > session.pageCount) {
+      reply.redirect(`/m/${session.accessMethod}/summary?t=${tabToken}`);
+      return;
+    }
+
+    if (branch !== 'alpha' && branch !== 'beta') {
+      reply.redirect(`/m/${session.accessMethod}/challenge/${pageIndex}?t=${tabToken}`);
+      return;
+    }
+
+    const runtimeId = session.pageOrder[pageIndex - 1];
+    const runtime = runtimeId
+      ? getChallengeRuntimeById(runtimeId)
+      : getChallengeRuntimeById('whitespace-token');
+
+    if (runtime.id !== 'redirect-token-branching') {
+      reply.redirect(`/m/${session.accessMethod}/challenge/${pageIndex}?t=${tabToken}`);
+      return;
+    }
+
+    const context = buildChallengeContext(session, pageIndex, runtime.id, tabToken);
+    const state = getOrCreateState(context, runtime);
+    const hopKeys = state.data.hopKeys as { alpha: string; beta: string };
+    const hopKey = hopKeys?.[branch];
+
+    if (!hopKey) {
+      reply.redirect(`/m/${session.accessMethod}/challenge/${pageIndex}?t=${tabToken}`);
+      return;
+    }
+
+    reply.redirect(
+      `/m/${session.accessMethod}/challenge/${pageIndex}/redirect-branch/hop?t=${tabToken}&b=${branch}&k=${hopKey}`,
+    );
+  });
+
+  app.get('/m/:method/challenge/:index/redirect-branch/hop', async (request, reply) => {
+    const sessionId = request.cookies[SESSION_COOKIE];
+    const session = getSession(sessionId);
+    const { method, index } = request.params as { method: string; index: string };
+    const query =
+      request.query && typeof request.query === 'object'
+        ? (request.query as { t?: string; b?: string; k?: string })
+        : {};
+    const tabToken = query.t;
+    const branch = query.b;
+    const providedHopKey = query.k;
+
+    if (!session || !validateTabToken(session, tabToken)) {
+      reply.redirect('/start');
+      return;
+    }
+
+    if (method !== session.accessMethod) {
+      reply.redirect(`/m/${session.accessMethod}/challenge/${index}?t=${tabToken}`);
+      return;
+    }
+
+    const pageIndex = Number(index);
+    if (Number.isNaN(pageIndex) || pageIndex < 1 || pageIndex > session.pageCount) {
+      reply.redirect(`/m/${session.accessMethod}/summary?t=${tabToken}`);
+      return;
+    }
+
+    if (branch !== 'alpha' && branch !== 'beta') {
+      reply.redirect(`/m/${session.accessMethod}/challenge/${pageIndex}?t=${tabToken}`);
+      return;
+    }
+
+    const runtimeId = session.pageOrder[pageIndex - 1];
+    const runtime = runtimeId
+      ? getChallengeRuntimeById(runtimeId)
+      : getChallengeRuntimeById('whitespace-token');
+
+    if (runtime.id !== 'redirect-token-branching') {
+      reply.redirect(`/m/${session.accessMethod}/challenge/${pageIndex}?t=${tabToken}`);
+      return;
+    }
+
+    const context = buildChallengeContext(session, pageIndex, runtime.id, tabToken);
+    const state = getOrCreateState(context, runtime);
+    const hopKeys = state.data.hopKeys as { alpha: string; beta: string };
+    const expectedBranch = state.data.expectedBranch as 'alpha' | 'beta';
+    const tokens = state.data.tokens as { alpha: string; beta: string };
+    const expectedHopKey = hopKeys?.[branch];
+
+    if (!providedHopKey || !expectedHopKey || providedHopKey !== expectedHopKey) {
+      reply.redirect(`/m/${session.accessMethod}/challenge/${pageIndex}?t=${tabToken}`);
+      return;
+    }
+
+    state.data.pickedBranch = branch;
+    state.data.pickupConfirmed = branch === expectedBranch;
+    const pickedToken = tokens?.[branch] ?? '';
+
+    reply.redirect(
+      `/m/${session.accessMethod}/challenge/${pageIndex}?t=${tabToken}&picked=1&rb=${branch}&rt=${encodeURIComponent(pickedToken)}`,
+    );
+  });
+
+  app.get('/m/:method/challenge/:index/timeout-idle/refresh', async (request, reply) => {
+    const sessionId = request.cookies[SESSION_COOKIE];
+    const session = getSession(sessionId);
+    const { method, index } = request.params as { method: string; index: string };
+    const tabToken =
+      request.query && typeof request.query === 'object'
+        ? (request.query as { t?: string }).t
+        : undefined;
+
+    if (!session || !validateTabToken(session, tabToken)) {
+      reply.redirect('/start');
+      return;
+    }
+
+    if (method !== session.accessMethod) {
+      reply.redirect(`/m/${session.accessMethod}/challenge/${index}?t=${tabToken}`);
+      return;
+    }
+
+    const pageIndex = Number(index);
+    if (Number.isNaN(pageIndex) || pageIndex < 1 || pageIndex > session.pageCount) {
+      reply.redirect(`/m/${session.accessMethod}/summary?t=${tabToken}`);
+      return;
+    }
+
+    const runtimeId = session.pageOrder[pageIndex - 1];
+    const runtime = runtimeId
+      ? getChallengeRuntimeById(runtimeId)
+      : getChallengeRuntimeById('whitespace-token');
+
+    if (runtime.id !== 'page-timeout-idle') {
+      reply.redirect(`/m/${session.accessMethod}/challenge/${pageIndex}?t=${tabToken}`);
+      return;
+    }
+
+    const context = buildChallengeContext(session, pageIndex, runtime.id, tabToken);
+    const state = getOrCreateState(context, runtime);
+    const refreshed = refreshPageTimeoutIdle(
+      state.data as {
+        token: string;
+        issuedAt: number;
+        idleTimeoutMs: number;
+        refreshCount: number;
+      },
+    );
+    state.data = refreshed;
+
+    reply.redirect(`/m/${session.accessMethod}/challenge/${pageIndex}?t=${tabToken}`);
   });
 
   app.post('/m/:method/challenge/:index/submit', async (request, reply) => {
@@ -311,7 +581,7 @@ export const registerRoutes = (app: FastifyInstance) => {
     const runtime = runtimeId
       ? getChallengeRuntimeById(runtimeId)
       : getChallengeRuntimeById('whitespace-token');
-    const context = buildChallengeContext(session, pageIndex, runtime.id);
+    const context = buildChallengeContext(session, pageIndex, runtime.id, tabToken);
     const state = getOrCreateState(context, runtime);
     const payload = await normalizePayload(request);
     const passed = runtime.validate(context, state.data, payload);
@@ -399,7 +669,7 @@ export const registerRoutes = (app: FastifyInstance) => {
       return;
     }
 
-    const context = buildChallengeContext(session, pageIndex, runtime.id);
+    const context = buildChallengeContext(session, pageIndex, runtime.id, tabToken);
     const state = getOrCreateState(context, runtime);
     const filename =
       typeof state.data.filename === 'string' ? state.data.filename : `challenge-${pageIndex}.txt`;
@@ -451,7 +721,7 @@ export const registerRoutes = (app: FastifyInstance) => {
       return;
     }
 
-    const context = buildChallengeContext(session, pageIndex, runtime.id);
+    const context = buildChallengeContext(session, pageIndex, runtime.id, tabToken);
     const state = getOrCreateState(context, runtime);
     const payload = buildApiTablePayload(
       state.data as {

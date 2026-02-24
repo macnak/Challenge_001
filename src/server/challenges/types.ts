@@ -8,6 +8,7 @@ export type ChallengeContext = {
   session: Session;
   index: number;
   rng: () => number;
+  tabToken?: string;
 };
 
 export type ChallengeDefinition = {

@@ -16,9 +16,10 @@ export const buildChallengeContext = (
   session: Session,
   index: number,
   challengeId: string,
+  tabToken?: string,
 ): ChallengeContext => {
   const rng = createSeededRng(`${session.seed}:${challengeId}`);
-  return { session, index, rng };
+  return { session, index, rng, tabToken };
 };
 
 export const getOrCreateState = (context: ChallengeContext, challenge: ChallengeRuntime) => {

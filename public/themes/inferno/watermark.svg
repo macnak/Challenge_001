@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="44" viewBox="0 0 300 44" role="img" aria-labelledby="title desc">
+  <title id="title">Inferno Theme Watermark</title>
+  <desc id="desc">Optional watermark for inferno theme-mode branding.</desc>
+  <defs>
+    <linearGradient id="wmGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#FFD79C" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#FF9B4A" stop-opacity="0.75" />
+    </linearGradient>
+  </defs>
+  <text x="2" y="28" fill="url(#wmGrad)" font-family="Inter, Arial, sans-serif" font-size="19" font-weight="700" letter-spacing="2.2">INFERNO THEME · INTERNAL</text>
+</svg>
